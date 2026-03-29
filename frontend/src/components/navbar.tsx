@@ -1,15 +1,23 @@
-import {Link} from 'react-router-dom';
+import { Link, useNavigate } from "react-router-dom";
 
 function Navbar() {
+    const navigate = useNavigate();
+
+    function handleLogout(): void {
+        localStorage.removeItem("user_data");
+        navigate("/");
+    }
+
     return (
         <nav className="navbar">
-            <h2>COP4331 large project</h2>
+            <h2>StudyRewards</h2>
+
             <div className="nav-links">
-                <Link to="/">Home</Link>
                 <Link to="/dashboard">Dashboard</Link>
-                <Link to="/sets">Study Sets</Link>                <Link to="/flashcards">Flashcards</Link>
+                <Link to="/sets">Study Sets</Link>
+                <Link to="/flashcards">Flashcards</Link>
                 <Link to="/quiz">Quiz</Link>
-                <Link to="/login">Login</Link>
+                <button onClick={handleLogout}>Logout</button>
             </div>
         </nav>
     );
