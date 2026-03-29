@@ -1,0 +1,7 @@
+{
+  "files": [],
+  "references": [
+    { "path": "../COP4331LargeProject/tsconfig.app.json" },
+    { "path": "./tsconfig.node.json" }
+  ]
+}
