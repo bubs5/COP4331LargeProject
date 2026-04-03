@@ -35,20 +35,30 @@ export interface Flashcard {
     definition: string;
 }
 
+export interface Flashcard {
+    id: number;
+    term: string;
+    definition: string;
+    setId: string;
+}
+
 export const flashcards: Flashcard[] = [
     {
         id: 1,
         term: "Who won UWCL in 2024?",
-        definition: "Barca"
+        definition: "Barca",
+        setId: "1"
     },
     {
         id: 2,
         term: "Who won UWCL in 2023?",
-        definition: "Barca"
+        definition: "Barca",
+        setId: "1"
     },
     {
         id: 3,
         term: "Who won the womens Ballon d'Or in 2023?",
-        definition: "Bonmati"
+        definition: "Bonmati",
+        setId: "2"
     }
 ];
