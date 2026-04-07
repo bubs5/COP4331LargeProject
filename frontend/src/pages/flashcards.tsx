@@ -1,10 +1,13 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import '../css/flashcards.css';
-import { getCardsForSet, getStudySetById, getStudySets } from '../services/setsService'; //gets API data for flashcards
+import {
+    getCardsForSet,
+    getStudySetById,
+    getStudySets,
+    deleteStudySet,
+} from '../services/setsService'; //gets API data for flashcards
 import type { Flashcard, StudySet } from '../types';
-
-
 
 
 
@@ -38,17 +41,40 @@ function Flashcards() {
 
         loadStudySets();
     }, []);
+    async function handleDeleteSet(setId: string) {
+        const confirmed = window.confirm('Delete this study set?');
+        if (!confirmed) return;
 
+        try {
+            await deleteStudySet(setId);
+
+            const fetchedSets = await getStudySets();
+            setStudySets(fetchedSets);
+
+            if (chosenSetId === setId) {
+                setChosenSetId('');
+                setSelectedSet(null);
+                setCards([]);
+                setIndex(0);
+                setShowDef(false);
+                setSessionComplete(false);
+                setKnownCards(new Set());
+            }
+        } catch (err) {
+            console.error(err);
+            setError('Failed to delete study set.');
+        }
+    }
     //load cards for when a set ischosen
     useEffect(() => {
         async function loadFlashcards() {
-           //if no set is chosen yet. show picker instead of loading
+            //if no set is chosen yet. show picker instead of loading
             if (!setId) {
                 setApiLoading(false);
                 return;
             }
 
-            try{
+            try {
                 setApiLoading(true);
                 setError('');
 
@@ -57,13 +83,13 @@ function Flashcards() {
                     getCardsForSet(setId),
                 ]);
                 //guard in case set doesnt exist
-                if (!fetchedSet){
+                if (!fetchedSet) {
                     setError('That study set could not be found.');
                     setApiLoading(false);
                     return;
                 }
                 //guard incase set exist but no cards yet
-                if (fetchedCards.length === 0){
+                if (fetchedCards.length === 0) {
                     setSelectedSet(fetchedSet);
                     setCards([]);
                     setError('This set has no flashcards yet. Add cards before studying.');
@@ -78,10 +104,10 @@ function Flashcards() {
                 setSessionComplete(false);
                 setKnownCards(new Set());
                 localStorage.setItem('lastSet', JSON.stringify(fetchedSet));
-            } catch (err){
+            } catch (err) {
                 console.error(err);
                 setError('Failed to load flashcards. Please try again.');
-            } finally{
+            } finally {
                 setApiLoading(false);
             }
         }
@@ -91,41 +117,41 @@ function Flashcards() {
 
 
     //how far into each set we aare
-    const progressPercent = useMemo(() =>{
+    const progressPercent = useMemo(() => {
         if (cards.length === 0) return 0;
         return Math.round(((index + 1) / cards.length) * 100);
     }, [cards.length, index]);
 
     //flip card
-    const toggleCard = () =>{
+    const toggleCard = () => {
         setShowDef((prev) => !prev);
     };
 
     //next card
-    const nextCard = () =>{
-        if (index === cards.length - 1){
+    const nextCard = () => {
+        if (index === cards.length - 1) {
             setSessionComplete(true);
             return;
         }
 
         setShowDef(false);
         setIndex((prev) => prev + 1);
-    };  
+    };
     // previous card
-    const prevCard = () =>{
+    const prevCard = () => {
         setShowDef(false);
         setIndex((prev) => Math.max(prev - 1, 0));
     };
 
     //mark card as known
-    const markKnown = () =>{
+    const markKnown = () => {
         if (cards.length === 0) return;
         setKnownCards((prev) => new Set(prev).add(cards[index].id));
         nextCard();
     };
 
     //mark card as unknown
-    const markUnknown = () =>{
+    const markUnknown = () => {
         if (cards.length === 0) return;
 
         setKnownCards((prev) => {
@@ -138,7 +164,7 @@ function Flashcards() {
     };
 
     //restart study session
-    const restartSession = () =>{
+    const restartSession = () => {
         setIndex(0);
         setShowDef(false);
         setKnownCards(new Set());
@@ -146,15 +172,15 @@ function Flashcards() {
     };
 
     //keyboard shortcuts
-    useEffect(() =>{
-        const handleKeyDown = (e: KeyboardEvent) =>{
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
             if (cards.length === 0 || sessionComplete) return;
 
             if (e.key === 'ArrowRight') {
                 nextCard();
-            } else if (e.key === 'ArrowLeft'){
+            } else if (e.key === 'ArrowLeft') {
                 prevCard();
-            } else if (e.key === ' ' || e.key === 'Enter'){
+            } else if (e.key === ' ' || e.key === 'Enter') {
                 e.preventDefault();
                 toggleCard();
             }
@@ -167,13 +193,23 @@ function Flashcards() {
     }, [index, cards, showDef, sessionComplete]);
 
     //set picker
-    if (!setId){
-        return(
-            <div className="flashcards-state">
-                <p className="eyebrow">Flashcards</p>
-                <h1>Choose a set to study</h1>
-                <p>Select one of your study sets to begin.</p>
+    if (!setId) {
+        return (
 
+            <div className="flashcards-state">
+                <div className="flashcards-actions">
+                    <span
+                        className="view-all"
+                        onClick={() => navigate('/sets')}
+                    >
+                        New Set
+                    </span>
+                </div>
+
+                <div className="flashcards-heading">
+                    <h1>Choose a set to study</h1>
+                    <p>Select one of your study sets to begin.</p>
+                </div>
                 <div className="set-picker-list">
                     {studySets.length === 0 ? (
                         //no sets created yet
@@ -188,19 +224,43 @@ function Flashcards() {
                         </div>
                     ) : (
                         studySets.map((set) => (
-                            <button
+                            <div
                                 key={set.id}
                                 className="set-picker-card"
                                 onClick={() => setChosenSetId(set.id)}
+                                style={{ cursor: 'pointer' }}
                             >
                                 <div className="set-picker-copy">
                                     <h3>{set.title}</h3>
                                     <p>{set.description}</p>
+
+                                    <span className="set-picker-count">
+                                        {set.cardCount} cards
+                                    </span>
                                 </div>
-                                <span className="set-picker-count">
-                                {set.cardCount} cards
-                            </span>
-                            </button>
+
+                                <div className="set-card-actions">
+                                    <button
+                                        className="secondary-btn"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            navigate(`/sets/${set.id}`);
+                                        }}
+                                    >
+                                        Edit
+                                    </button>
+
+                                    <button
+                                        className="danger-btn"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleDeleteSet(set.id);
+                                        }}
+                                    >
+                                        Delete
+                                    </button>
+                                </div>
+                            </div>
                         ))
                     )}
                 </div>
@@ -208,13 +268,13 @@ function Flashcards() {
         );
     }
     //loading
-    if (apiLoading){
+    if (apiLoading) {
         return <div className="flashcards-state">Loading flashcards...</div>;
     }
 
     //error
-    if (error){
-        return(
+    if (error) {
+        return (
             <div className="flashcards-state">
                 <h2>{error}</h2>
                 <button className="primary-btn" onClick={() => navigate(setId ? `/sets?setId=${setId}` : '/sets')}>
@@ -225,8 +285,8 @@ function Flashcards() {
     }
 
     //session complete screen
-    if (sessionComplete){
-        return(
+    if (sessionComplete) {
+        return (
             <div className="flashcardContainer complete-screen">
                 <p className="eyebrow">Session Complete</p>
                 <h1>{selectedSet?.title}</h1>
@@ -244,7 +304,7 @@ function Flashcards() {
         );
     }
     //empty or missing card
-    if (!cards.length || !cards[index]){
+    if (!cards.length || !cards[index]) {
         return (
             <div className="flashcards-state">
                 <h2>No flashcards available.</h2>
@@ -260,18 +320,10 @@ function Flashcards() {
     //ehat card is currently on the screen
     const currentCard = cards[index];
 
-    return(
+    return (
 
         <div className="flashcardContainer">
             <div className="flashcards-topbar">
-                <button className="secondary-btn" onClick={() => navigate(`/sets?setId=${selectedSet?.id || ''}`)}>
-                    Back to Sets
-                </button>
-                <div className="flashcards-title-block">
-                    <p className="eyebrow">Flashcards</p>
-                    <h1>{selectedSet?.title || 'Study Mode'}</h1>
-                    <p>{selectedSet?.description}</p>
-                </div>
                 {/*clears all session data and returns to the picker */}
                 <button
                     className="secondary-btn"
@@ -288,6 +340,16 @@ function Flashcards() {
                 >
                     Change Set
                 </button>
+                <div className="flashcards-title-block">
+                    <p className="eyebrow">Flashcards</p>
+                    <h1>{selectedSet?.title || 'Study Mode'}</h1>
+                    <p>{selectedSet?.description}</p>
+                </div>
+                <button className="secondary-btn" onClick={() => navigate(`/sets?setId=${selectedSet?.id || ''}`)}>
+                    Create New Set
+                </button>
+
+
             </div>
             {/*progress bar*/}
             <div className="progress-row">
