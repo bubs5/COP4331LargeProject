@@ -5,7 +5,8 @@ import Login from "./pages/login";
 import Register from "./pages/register";
 import ForgotPassword from "./pages/forgotpass";
 import Dashboard from "./pages/dashboard";
-import StudySets from "./pages/sets";
+import Sets from "./pages/sets";
+import SetDetail from "./pages/SetDetail.tsx";
 import Flashcards from "./pages/flashcards";
 import Quiz from "./pages/quiz";
 
@@ -27,7 +28,8 @@ function App() {
                     <Route path="/register" element={<Register />} />
                     <Route path="/forgot-password" element={<ForgotPassword />} />
                     <Route path="/dashboard" element={<Dashboard />} />
-                    <Route path="/sets" element={<StudySets />} />
+                    <Route path="/sets" element={<Sets />} />
+                    <Route path="/sets/:setId" element={<SetDetail />} />
                     <Route path="/flashcards" element={<Flashcards />} />
                     <Route path="/quiz" element={<Quiz />} />
                 </Routes>

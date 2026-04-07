@@ -1,0 +1,255 @@
+
+
+/* Outer wrapper*/
+.flashcardContainer {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 12px 0 60px;
+}
+
+/* back btn/change  */
+.flashcards-topbar {
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+    align-items: flex-start;
+    margin-bottom: 28px;
+}
+
+/* Title/text block inside/top bar */
+.flashcards-title-block h1 {
+    margin: 6px 0;
+    font-size: 2rem;
+    color: #e8eaf6;
+    letter-spacing: -0.02em;
+}
+
+.flashcards-title-block p {
+    margin: 0;
+    color: #7b8cad;
+}
+
+/*progress*/
+.progress-row {
+    background: rgba(16, 20, 40, 0.75);
+    border: 1px solid rgba(99, 120, 255, 0.15);
+    border-radius: 20px;
+    box-shadow:
+            0 0 0 1px rgba(99, 120, 255, 0.06),
+            0 20px 50px rgba(0, 0, 10, 0.5),
+            inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    padding: 18px 22px;
+    margin-bottom: 20px;
+    backdrop-filter: blur(14px);
+}
+
+/* Card count & percentage labels*/
+.progress-meta {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+    color: #8a97bb;
+    font-weight: 600;
+    font-size: 0.88rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+/*  Track bar container */
+.progress-track {
+    width: 100%;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+
+.progress-fill {
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #4f6fff, #a78bfa, #38bdf8);
+    background-size: 200% 100%;
+
+}
+
+
+/* main flashcard*/
+
+.flashcard {
+    min-height: 360px;
+    border-radius: 28px;
+    background:
+            radial-gradient(ellipse at 30% 20%, rgba(79, 111, 255, 0.07) 0%, transparent 60%),
+            radial-gradient(ellipse at 80% 80%, rgba(167, 139, 250, 0.06) 0%, transparent 55%),
+            rgba(12, 16, 34, 0.88);
+    border: 1px solid rgba(99, 120, 255, 0.18);
+    box-shadow:
+            0 0 0 1px rgba(99, 120, 255, 0.06),
+            0 30px 70px rgba(0, 0, 20, 0.6),
+            inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(20px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 40px 48px;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.flashcard:hover {
+    transform: translateY(-3px);
+    border-color: rgba(99, 120, 255, 0.35);
+    box-shadow:
+            0 0 0 1px rgba(99, 120, 255, 0.12),
+            0 40px 80px rgba(0, 0, 30, 0.65),
+            inset 0 1px 0 rgba(255, 255, 255, 0.07);
+}
+
+/* term/definition*/
+.card-face-label {
+    display: inline-flex;
+    margin-bottom: 20px;
+    padding: 6px 16px;
+    border-radius: 999px;
+    background: rgba(79, 111, 255, 0.15);
+    border: 1px solid rgba(79, 111, 255, 0.3);
+    color: #818cf8;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+
+.flashcard h2 {
+    margin: 0;
+    font-size: clamp(1.5rem, 4vw, 2.4rem);
+    color: #e2e8f5;
+    line-height: 1.25;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+}
+
+/* flip*/
+.flashcard p {
+    margin-top: 20px;
+    color: #4a5878;
+    font-size: 0.85rem;
+    letter-spacing: 0.03em;
+}
+
+/* navigation*/
+.button-group,
+.knowldge-buttons,
+.results-actions {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 18px;
+}
+
+
+.flashcards-state,
+.complete-screen {
+    max-width: 720px;
+    margin: 80px auto;
+    text-align: center;
+    background:
+            radial-gradient(ellipse at 50% 0%, rgba(79, 111, 255, 0.07) 0%, transparent 70%),
+            rgba(12, 16, 34, 0.88);
+    border: 1px solid rgba(99, 120, 255, 0.15);
+    border-radius: 28px;
+    box-shadow:
+            0 30px 70px rgba(0, 0, 20, 0.55),
+            inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    padding: 40px 36px;
+    backdrop-filter: blur(20px);
+}
+
+/*results*/
+.results-copy {
+    color: #7b8cad;
+    font-size: 1.05rem;
+    margin: 8px 0 24px;
+}
+
+
+@media (max-width: 700px) {
+    .flashcards-topbar,
+    .progress-meta {
+        flex-direction: column;
+    }
+
+    .flashcard {
+        min-height: 280px;
+        padding: 28px 24px;
+    }
+}
+
+/* slectable ets*/
+.set-picker-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 24px;
+}
+
+
+.set-picker-card {
+    width: 100%;
+    border: 1px solid rgba(99, 120, 255, 0.14);
+    border-radius: 18px;
+    background: rgba(16, 20, 44, 0.7);
+    box-shadow: 0 8px 24px rgba(0, 0, 20, 0.35);
+    padding: 18px 22px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    text-align: left;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+    backdrop-filter: blur(10px);
+}
+
+.set-picker-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(99, 120, 255, 0.32);
+    box-shadow: 0 16px 40px rgba(0, 0, 30, 0.5);
+}
+
+/* title */
+.set-picker-copy h3 {
+    margin: 0 0 4px;
+    color: #dde3f7;
+    font-weight: 600;
+}
+
+.set-picker-copy p {
+    margin: 0;
+    color: #5f708a;
+    font-size: 0.9rem;
+}
+
+/* card coun */
+.set-picker-count {
+    white-space: nowrap;
+    padding: 6px 14px;
+    border-radius: 999px;
+    background: rgba(79, 111, 255, 0.15);
+    border: 1px solid rgba(79, 111, 255, 0.28);
+    color: #818cf8;
+    font-weight: 700;
+    font-size: 0.85rem;
+}
+
+/* empty ztate */
+.empty-picker {
+    margin-top: 20px;
+    color: #4a5878;
+}
