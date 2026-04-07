@@ -1,14 +1,14 @@
 
 
 /* Outer wrapper*/
-.flashcardContainer {
+.flashcardContainer{
     max-width: 900px;
     margin: 0 auto;
     padding: 12px 0 60px;
 }
 
 /* back btn/change  */
-.flashcards-topbar {
+.flashcards-topbar{
     display: flex;
     justify-content: space-between;
     gap: 20px;
@@ -17,20 +17,20 @@
 }
 
 /* Title/text block inside/top bar */
-.flashcards-title-block h1 {
+.flashcards-title-block h1{
     margin: 6px 0;
     font-size: 2rem;
     color: #e8eaf6;
     letter-spacing: -0.02em;
 }
 
-.flashcards-title-block p {
+.flashcards-title-block p{
     margin: 0;
     color: #7b8cad;
 }
 
 /*progress*/
-.progress-row {
+.progress-row{
     background: rgba(16, 20, 40, 0.75);
     border: 1px solid rgba(99, 120, 255, 0.15);
     border-radius: 20px;
@@ -44,7 +44,7 @@
 }
 
 /* Card count & percentage labels*/
-.progress-meta {
+.progress-meta{
     display: flex;
     justify-content: space-between;
     gap: 12px;
@@ -57,7 +57,7 @@
 }
 
 /*  Track bar container */
-.progress-track {
+.progress-track{
     width: 100%;
     height: 6px;
     background: rgba(255, 255, 255, 0.06);
@@ -66,7 +66,7 @@
 }
 
 
-.progress-fill {
+.progress-fill{
     height: 100%;
     border-radius: inherit;
     background: linear-gradient(90deg, #4f6fff, #a78bfa, #38bdf8);
@@ -77,7 +77,7 @@
 
 /* main flashcard*/
 
-.flashcard {
+.flashcard{
     min-height: 360px;
     border-radius: 28px;
     background:
@@ -100,7 +100,7 @@
     transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
-.flashcard:hover {
+.flashcard:hover{
     transform: translateY(-3px);
     border-color: rgba(99, 120, 255, 0.35);
     box-shadow:
@@ -110,7 +110,7 @@
 }
 
 /* term/definition*/
-.card-face-label {
+.card-face-label{
     display: inline-flex;
     margin-bottom: 20px;
     padding: 6px 16px;
@@ -125,7 +125,7 @@
 }
 
 
-.flashcard h2 {
+.flashcard h2{
     margin: 0;
     font-size: clamp(1.5rem, 4vw, 2.4rem);
     color: #e2e8f5;
@@ -135,7 +135,7 @@
 }
 
 /* flip*/
-.flashcard p {
+.flashcard p{
     margin-top: 20px;
     color: #4a5878;
     font-size: 0.85rem;
@@ -145,7 +145,7 @@
 /* navigation*/
 .button-group,
 .knowldge-buttons,
-.results-actions {
+.results-actions{
     display: flex;
     justify-content: center;
     flex-wrap: wrap;
@@ -155,7 +155,7 @@
 
 
 .flashcards-state,
-.complete-screen {
+.complete-screen{
     max-width: 720px;
     margin: 80px auto;
     text-align: center;
@@ -172,27 +172,27 @@
 }
 
 /*results*/
-.results-copy {
+.results-copy{
     color: #7b8cad;
     font-size: 1.05rem;
     margin: 8px 0 24px;
 }
 
 
-@media (max-width: 700px) {
+@media (max-width: 700px){
     .flashcards-topbar,
-    .progress-meta {
+    .progress-meta{
         flex-direction: column;
     }
 
-    .flashcard {
+    .flashcard{
         min-height: 280px;
         padding: 28px 24px;
     }
 }
 
 /* slectable ets*/
-.set-picker-list {
+.set-picker-list{
     display: flex;
     flex-direction: column;
     gap: 12px;
@@ -200,7 +200,7 @@
 }
 
 
-.set-picker-card {
+.set-picker-card{
     width: 100%;
     border: 1px solid rgba(99, 120, 255, 0.14);
     border-radius: 18px;
@@ -217,27 +217,27 @@
     backdrop-filter: blur(10px);
 }
 
-.set-picker-card:hover {
+.set-picker-card:hover{
     transform: translateY(-2px);
     border-color: rgba(99, 120, 255, 0.32);
     box-shadow: 0 16px 40px rgba(0, 0, 30, 0.5);
 }
 
 /* title */
-.set-picker-copy h3 {
+.set-picker-copy h3{
     margin: 0 0 4px;
     color: #dde3f7;
     font-weight: 600;
 }
 
-.set-picker-copy p {
+.set-picker-copy p{
     margin: 0;
     color: #5f708a;
     font-size: 0.9rem;
 }
 
 /* card coun */
-.set-picker-count {
+.set-picker-count{
     white-space: nowrap;
     padding: 6px 14px;
     border-radius: 999px;
@@ -249,7 +249,7 @@
 }
 
 /* empty ztate */
-.empty-picker {
+.empty-picker{
     margin-top: 20px;
     color: #4a5878;
 }

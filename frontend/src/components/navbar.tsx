@@ -10,7 +10,7 @@ function Navbar() {
 
     return (
         <nav className="navbar">
-            <h2>StudyRewards</h2>
+            <h2>Title</h2>
 
             <div className="nav-links">
                 <Link to="/dashboard">Dashboard</Link>

@@ -1,7 +1,7 @@
 
 
 /*  Outer page wrapper */
-.sets-page {
+.sets-page{
     max-width: 1100px;
     margin: 0 auto;
     padding: 20px 0 80px;
@@ -10,11 +10,11 @@
 
 
 /*  Header block*/
-.sets-header {
+.sets-header{
     margin-bottom: 28px;
 }
 
-.sets-header h1 {
+.sets-header h1{
     margin: 6px 0;
     font-size: 2.4rem;
     color: #e2e8f5;
@@ -22,20 +22,20 @@
     font-weight: 800;
 }
 
-.sets-header p {
+.sets-header p{
     margin: 0;
     color: #7b8cad;
 }
 
 
-.sets-grid {
+.sets-grid{
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
     gap: 16px;
 }
 
 
-.set-card {
+.set-card{
     background:
             radial-gradient(ellipse at 20% 10%, rgba(79, 111, 255, 0.08) 0%, transparent 55%),
             rgba(14, 18, 38, 0.85);
@@ -51,7 +51,7 @@
 }
 
 
-.set-card:hover {
+.set-card:hover{
     transform: translateY(-4px);
     border-color: rgba(99, 120, 255, 0.32);
     box-shadow:
@@ -62,7 +62,7 @@
 
 
 /* title/description  */
-.set-card-top h3 {
+.set-card-top h3{
     margin: 0 0 6px;
     color: #dde3f7;
     font-weight: 600;
@@ -70,7 +70,7 @@
     letter-spacing: -0.01em;
 }
 
-.set-card-top p {
+.set-card-top p{
     margin: 0;
     color: #5f708a;
     font-size: 0.9rem;
@@ -78,7 +78,7 @@
 }
 
 /*  Card count*/
-.card-badge {
+.card-badge{
     margin-top: 12px;
     display: inline-block;
     padding: 5px 12px;
@@ -92,14 +92,14 @@
 }
 
 /*open/delete*/
-.set-card-actions {
+.set-card-actions{
     margin-top: 16px;
     display: flex;
     gap: 10px;
 }
 
 /* creste new*/
-.create-set-section {
+.create-set-section{
     margin-top: 48px;
     padding: 28px;
     border-radius: 24px;
@@ -114,7 +114,7 @@
 }
 
 /* Section heading*/
-.create-set-section h2 {
+.create-set-section h2{
     margin: 0 0 16px;
     color: #dde3f7;
     font-size: 1.2rem;
@@ -122,14 +122,14 @@
 }
 
 /* Stacked form layout */
-.set-form {
+.set-form{
     display: flex;
     flex-direction: column;
     gap: 12px;
 }
 
 /* Label text*/
-.set-form label {
+.set-form label{
     color: #8a97bb;
     font-size: 0.8rem;
     font-weight: 700;
@@ -139,7 +139,7 @@
 
 /* Dark glass inputs */
 .set-form input,
-.set-form textarea {
+.set-form textarea{
     border-radius: 12px;
     border: 1px solid rgba(99, 120, 255, 0.18);
     background: rgba(8, 11, 28, 0.7);
@@ -151,25 +151,25 @@
 }
 
 .set-form input::placeholder,
-.set-form textarea::placeholder {
+.set-form textarea::placeholder{
     color: #3c4a68;
 }
 
 /* Focus ring */
 .set-form input:focus,
-.set-form textarea:focus {
+.set-form textarea:focus{
     border-color: rgba(99, 120, 255, 0.45);
     box-shadow: 0 0 0 3px rgba(79, 111, 255, 0.1);
 }
 
 
-.set-form textarea {
+.set-form textarea{
     min-height: 86px;
     resize: vertical;
 }
 
 /* Shown when no sets exist yet  */
-.empty-card {
+.empty-card{
     text-align: center;
     padding: 40px 30px;
     border-radius: 20px;
@@ -178,7 +178,7 @@
     color: #4a5878;
 }
 
-.empty-card h2 {
+.empty-card h2{
     color: #7b8cad;
     margin: 0 0 8px;
 }
