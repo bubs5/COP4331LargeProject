@@ -1,449 +1,253 @@
-import { useEffect, useMemo, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
-import "../css/quiz.css";
-import { getStudySets, getCardsForSet, getStudySetById, deleteStudySet } from "../services/setsService";import type { StudySet, Flashcard } from "../types";
-//defines the structure of each quiz question
-type QuizQuestion = {
-    id: number;
-    question: string;
-    options: string[];
-    correctAnswer: string;
-};
+import { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import "../css/setDetail.css";
+import type { Flashcard, StudySet } from "../types";
+import {
+    getStudySetById,
+    getCardsForSet,
+    createCardForSet,
+    updateCardInSet,
+    deleteCardFromSet,
+    deleteStudySet,
+} from "../services/setsService";
 
-//helper function to shuffle answers randomly
-function shuffleArray<T>(array: T[]): T[] {
-    const copy = [...array];
-    for (let i = copy.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [copy[i], copy[j]] = [copy[j], copy[i]];
-    }
-    return copy;
-}
-
-function Quiz() {
+function SetDetail(){
+    //get setID from url
+    const { setId } = useParams();
     const navigate = useNavigate();
-    const [searchParams] = useSearchParams();
 
-    //all available study sets
-    const [studySets, setStudySets] = useState<StudySet[]>([]);
-
-    //selected set id (from URL or user click)
-    const [chosenSetId, setChosenSetId] = useState(searchParams.get("setId") || "");
-
-    //currently selected set object
-    const [selectedSet, setSelectedSet] = useState<StudySet | null>(null);
-
-    //flashcards for selected set
+    const [studySet, setStudySet] = useState<StudySet | null>(null);
     const [cards, setCards] = useState<Flashcard[]>([]);
-
-    //loading states
-    const [loadingSets, setLoadingSets] = useState(true);
-    const [loadingQuiz, setLoadingQuiz] = useState(false);
-
-    //error message
+    const [term, setTerm] = useState("");
+    const [definition, setDefinition] = useState("");
+    const [editingCardId, setEditingCardId] = useState<number | null>(null);
+    const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
 
-    //quiz progress state
-    const [currentIndex, setCurrentIndex] = useState(0);
-    const [selectedAnswer, setSelectedAnswer] = useState("");
-    const [showFeedback, setShowFeedback] = useState(false);
-    const [score, setScore] = useState(0);
-    const [quizComplete, setQuizComplete] = useState(false);
+    //data fetching
+    async function loadSetData(){
+        if (!setId) return;
 
-    //load all study sets when page loads
-    useEffect(() => {
-        async function loadSets() {
-            try {
-                setLoadingSets(true);
-                setError("");
-                const data = await getStudySets();
-                setStudySets(data);
-            } catch (err) {
-                console.error(err);
-                setError("Failed to load study sets.");
-            } finally {
-                setLoadingSets(false);
-            }
-        }
+        try{
+            setLoading(true);
+            const [setData, cardData] = await Promise.all([
+                getStudySetById(setId),
+                getCardsForSet(setId),
+            ]);
 
-        loadSets();
-    }, []);
-
-    //load selected set + its cards when chosenSetId changes
-    useEffect(() => {
-        async function loadQuizData() {
-
-            //if no set selected, reset everything
-            if (!chosenSetId) {
-                setSelectedSet(null);
-                setCards([]);
+            if (!setData){
+                setError("Study set not found.");
                 return;
             }
 
-            try {
-                setLoadingQuiz(true);
-                setError("");
-
-                //fetch set info and its cards at same time
-                const [fetchedSet, fetchedCards] = await Promise.all([
-                    getStudySetById(chosenSetId),
-                    getCardsForSet(chosenSetId),
-                ]);
-
-                //handle invalid set
-                if (!fetchedSet) {
-                    setError("That study set could not be found.");
-                    setLoadingQuiz(false);
-                    return;
-                }
-
-                //handle empty set
-                if (fetchedCards.length === 0) {
-                    setSelectedSet(fetchedSet);
-                    setCards([]);
-                    setError("This set has no flashcards yet. Add cards before taking the quiz.");
-                    setLoadingQuiz(false);
-                    return;
-                }
-
-                //store data
-                setSelectedSet(fetchedSet);
-                setCards(fetchedCards);
-
-                //reset quiz state
-                setCurrentIndex(0);
-                setSelectedAnswer("");
-                setShowFeedback(false);
-                setScore(0);
-                setQuizComplete(false);
-
-                //save last opened set
-                localStorage.setItem("lastSet", JSON.stringify(fetchedSet));
-
-            } catch (err) {
-                console.error(err);
-                setError("Failed to load quiz data.");
-            } finally {
-                setLoadingQuiz(false);
-            }
+            setStudySet(setData);
+            setCards(cardData);
+            localStorage.setItem("lastSet", JSON.stringify(setData));
+        } catch (err){
+            console.error(err);
+            setError("Failed to load this study set.");
+        } finally{
+            setLoading(false);
         }
+    }
 
-        loadQuizData();
-    }, [chosenSetId]);
+    useEffect(() =>{
+        loadSetData();
+    }, [setId]);
 
-    //convert flashcards into quiz questions
-    const quizQuestions: QuizQuestion[] = useMemo(() => {
-        return cards.map((card) => {
-
-            //get wrong answers from other cards
-            const wrongAnswers = cards
-                .filter((item) => item.id !== card.id)
-                .map((item) => item.definition);
-
-            //pick 3 random wrong answers
-            const randomWrong = shuffleArray(wrongAnswers).slice(0, 3);
-
-            return {
-                id: card.id,
-                question: card.term,
-                correctAnswer: card.definition,
-                options: shuffleArray([card.definition, ...randomWrong]),
-            };
-        });
-    }, [cards]);
-
-    //when user clicks an answer
-    const handleAnswerClick = (answer: string) => {
-        if (showFeedback) return;
-
-        setSelectedAnswer(answer);
-        setShowFeedback(true);
-
-        //increase score if correct
-        if (answer === quizQuestions[currentIndex].correctAnswer) {
-            setScore((prev) => prev + 1);
-        }
-    };
-
-    //move to next question
-    const handleNext = () => {
-        if (currentIndex === quizQuestions.length - 1) {
-            setQuizComplete(true);
-            return;
-        }
-
-        setCurrentIndex((prev) => prev + 1);
-        setSelectedAnswer("");
-        setShowFeedback(false);
-    };
-
-    //restart entire quiz
-    const restartQuiz = () => {
-        setCurrentIndex(0);
-        setSelectedAnswer("");
-        setShowFeedback(false);
-        setScore(0);
-        setQuizComplete(false);
-    };
-
-    //delete a study set from the quiz picker
-    const handleDeleteSet = async (setId: string) => {
-        const confirmed = window.confirm("Delete this study set?");
-        if (!confirmed) return;
+    //add or update a card
+    async function handleSubmitCard(e: React.FormEvent){
+        e.preventDefault();
+        if (!setId || !term.trim() || !definition.trim()) return;
 
         try {
-            await deleteStudySet(setId);
-
-            const updatedSets = await getStudySets();
-            setStudySets(updatedSets);
-
-            if (chosenSetId === setId) {
-                setChosenSetId("");
-                setSelectedSet(null);
-                setCards([]);
+            if (editingCardId !== null){
+                await updateCardInSet(editingCardId, { term, definition });
+            } else {
+                await createCardForSet(setId, { term, definition });
             }
+
+            setTerm("");
+            setDefinition("");
+            setEditingCardId(null);
+            await loadSetData();
+        } catch (err){
+            console.error(err);
+            setError("Failed to save flashcard.");
+        }
+    }
+    //handles edits
+    function handleEdit(card: Flashcard){
+        setTerm(card.term);
+        setDefinition(card.definition);
+        setEditingCardId(card.id);
+    }
+
+    //delete a card
+    async function handleDeleteCard(cardId: number){
+        //condirm the deletion
+        const confirmed = window.confirm("Delete this flashcard?");
+        if (!confirmed) return;
+
+        try{
+            await deleteCardFromSet(cardId);
+            await loadSetData();
+        } catch (err){
+            console.error(err);
+            setError("Failed to delete card.");
+        }
+    }
+    //deletes the entire set
+    async function handleDeleteSet(){
+        if (!studySet) return;
+        //confirm deletion
+        const confirmed = window.confirm("Delete this entire study set?");
+        if (!confirmed) return;
+
+        try{
+            await deleteStudySet(studySet.id);
+            navigate("/sets");
         } catch (err) {
             console.error(err);
             setError("Failed to delete study set.");
         }
-    };
+    }
 
-    if (!chosenSetId) {
+    if (loading){
+        return <div className="page-state">Loading set...</div>;
+    }
+
+    if (error && !studySet){
         return (
-            <div className="quiz-container">
+            <div className="page-state error-state">
+                <h2>{error}</h2>
+                <button className="primary-btn" onClick={() => navigate("/sets")}>
+                    Back to Sets
+                </button>
+            </div>
+        );
+    }
 
-                <div className="flashcards-actions">
-                    <span
-                        className="view-all"
-                        onClick={() => navigate("/sets")}
+    if (!studySet) return null;
+
+    return(
+        <div className="set-detail-page">
+            <div className="set-detail-header">
+                <button className="secondary-btn" onClick={() => navigate("/flashcards")}>
+                    Back to Sets
+                </button>
+
+                <div className="set-detail-title">
+                    <p className="eyebrow">Selected Set</p>
+                    <h1>{studySet.title}</h1>
+                    <p>{studySet.description}</p>
+                </div>
+
+                <div className="set-detail-actions">
+                    <button
+                        className="primary-btn"
+                        onClick={() => navigate(`/flashcards?setId=${studySet.id}`)}
                     >
-                        New Set
-                    </span>
+                        Study This Set
+                    </button>
+
+                      <button
+                className="secondary-btn"
+                onClick={() => navigate(`/quiz?setId=${studySet.id}`)}
+            >
+                Quiz This Set
+            </button>
+                    <button className="danger-btn" onClick={handleDeleteSet}>
+                        Delete This Set
+                    </button>
+                </div>
+            </div>
+
+            {error && <div className="page-state error-state">{error}</div>}
+
+            <section className="card-editor-section">
+                <h2>{editingCardId !== null ? "Edit Flashcard" : "Add Flashcard"}</h2>
+
+                <form onSubmit={handleSubmitCard} className="card-form">
+                    <label>Term</label>
+                    <input
+                        type="text"
+                        value={term}
+                        onChange={(e) => setTerm(e.target.value)}
+                        placeholder="Enter the front of the card"
+                    />
+
+                    <label>Definition</label>
+                    <textarea
+                        value={definition}
+                        onChange={(e) => setDefinition(e.target.value)}
+                        placeholder="Enter the back of the card"
+                    />
+
+                    <div className="card-form-actions">
+                        <button className="primary-btn" type="submit">
+                            {editingCardId !== null ? "Update Card" : "Add Card"}
+                        </button>
+
+                        {editingCardId !== null && (
+                            <button
+                                type="button"
+                                className="secondary-btn"
+                                onClick={() => {
+                                    setEditingCardId(null);
+                                    setTerm("");
+                                    setDefinition("");
+                                }}
+                            >
+                                Cancel Edit
+                            </button>
+                        )}
+                    </div>
+                </form>
+            </section>
+
+            <section className="cards-list-section">
+                <div className="cards-list-header">
+                    <h2>Cards in this set</h2>
+                    <span className="card-badge">{cards.length}</span>
                 </div>
 
-                <div className="flashcards-heading">
-                    <h1>Choose a set to quiz</h1>
-                    <p>Select a study set to begin.</p>
-                </div>
-
-                {loadingSets ? (
-                    <div className="quiz-state">
-                        <h2>Loading study sets...</h2>
-                    </div>
-                ) : error ? (
-                    <div className="quiz-state">
-                        <h2>{error}</h2>
-                        <button className="primary-btn" onClick={() => navigate("/dashboard")}>
-                            Back to Dashboard
-                        </button>
-                    </div>
-                ) : studySets.length === 0 ? (
-                    <div className="quiz-state">
-                        <h2>No study sets available.</h2>
-                        <button className="primary-btn" onClick={() => navigate("/sets")}>
-                            Create New Set
-                        </button>
+                {cards.length === 0 ? (
+                    <div className="empty-card">
+                        <p>No flashcards yet. Add first one above.</p>
                     </div>
                 ) : (
+                    <div className="cards-list">
+                        {cards.map((card, i) => (
+                            <div key={card.id} className="flashcard-row">
+                                <div className="flashcard-number">{i + 1}</div>
 
-                  <div className="set-picker-list">
-    {studySets.map((set) => (
-        <div
-            key={set.id}
-            className="set-picker-card"
-            onClick={() => setChosenSetId(set.id)}
-            style={{ cursor: "pointer" }}
-        >
-            <div className="set-picker-copy">
-                <h3>{set.title}</h3>
-                <p>{set.description}</p>
+                                <div className="flashcard-copy">
+                                    <h3>{card.term}</h3>
+                                    <p>{card.definition}</p>
+                                </div>
 
-                <span className="set-picker-count">
-                    {set.cardCount} cards
-                </span>
-            </div>
-
-            <div className="set-card-actions">
-                <button
-                    className="secondary-btn"
-                    onClick={(e) => {
-                        e.stopPropagation(); //prevents opening quiz
-                        navigate(`/sets/${set.id}`);
-                    }}
-                >
-                    Edit
-                </button>
-
-                <button
-                    className="danger-btn"
-                    onClick={(e) => {
-                        e.stopPropagation(); //prevents opening quiz
-                        handleDeleteSet(set.id);
-                    }}
-                >
-                    Delete
-                </button>
-            </div>
-        </div>
-    ))}
-</div>
+                                <div className="flashcard-row-actions">
+                                    <button
+                                        className="secondary-btn"
+                                        onClick={() => handleEdit(card)}
+                                    >
+                                        Edit
+                                    </button>
+                                    <button
+                                        className="danger-btn"
+                                        onClick={() => handleDeleteCard(card.id)}
+                                    >
+                                        Delete
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
                 )}
-            </div>
-        );
-    }
-
-    //loading quiz
-    if (loadingQuiz) {
-        return (
-            <div className="quiz-state">
-                <h2>Loading quiz...</h2>
-            </div>
-        );
-    }
-
-    //error screen
-    if (error) {
-        return (
-            <div className="quiz-state">
-                <h2>{error}</h2>
-                <button
-                    className="primary-btn"
-                    onClick={() => setChosenSetId("")}
-                >
-                    Choose Another Set
-                </button>
-            </div>
-        );
-    }
-
-    //no questions fallback
-    if (quizQuestions.length === 0) {
-        return (
-            <div className="quiz-state">
-                <h2>No quiz questions available.</h2>
-                <button
-                    className="primary-btn"
-                    onClick={() => setChosenSetId("")}
-                >
-                    Choose Another Set
-                </button>
-            </div>
-        );
-    }
-
-    //results screen
-    if (quizComplete) {
-        return (
-            <div className="quiz-container results-screen">
-                <p className="eyebrow">Quiz Complete</p>
-                <h1>{selectedSet?.title || "Your Results"}</h1>
-                <p className="results-copy">
-                    You got {score} out of {quizQuestions.length} correct.
-                </p>
-
-                <div className="results-actions">
-                    <button className="primary-btn" onClick={restartQuiz}>
-                        Restart Quiz
-                    </button>
-                    <button
-                        className="secondary-btn"
-                        onClick={() => setChosenSetId("")}
-                    >
-                        Change Set
-                    </button>
-                </div>
-            </div>
-        );
-    }
-
-    //current question + progress
-    const currentQuestion = quizQuestions[currentIndex];
-    const progressPercent = Math.round(((currentIndex + 1) / quizQuestions.length) * 100);
-
-    return (
-        <div className="quiz-container">
-
-            <div className="quiz-topbar">
-                <button
-                    className="secondary-btn"
-                    onClick={() => setChosenSetId("")}
-                >
-                    Change Set
-                </button>
-
-                <div className="quiz-title-block">
-                    <p className="eyebrow">Quiz Mode</p>
-                    <h1>{selectedSet?.title || "Test Yourself"}</h1>
-                    <p>Choose the correct definition for each term.</p>
-                </div>
-
-                <button
-                    className="secondary-btn"
-                    onClick={() => navigate("/dashboard")}
-                >
-                    Home
-                </button>
-            </div>
-
-            <div className="progress-row">
-                <div className="progress-meta">
-                    <span>Question {currentIndex + 1} of {quizQuestions.length}</span>
-                    <span>Score: {score}</span>
-                </div>
-                <div className="progress-track">
-                    <div className="progress-fill" style={{ width: `${progressPercent}%` }} />
-                </div>
-            </div>
-
-            <div className="quiz-card">
-                <span className="card-face-label">Term</span>
-                <h2>{currentQuestion.question}</h2>
-
-                <div className="quiz-options">
-                    {currentQuestion.options.map((option, index) => {
-                        let buttonClass = "quiz-option";
-
-                        if (showFeedback) {
-                            if (option === currentQuestion.correctAnswer) {
-                                buttonClass += " correct";
-                            } else if (option === selectedAnswer) {
-                                buttonClass += " incorrect";
-                            }
-                        }
-
-                        return (
-                            <button
-                                key={index}
-                                className={buttonClass}
-                                onClick={() => handleAnswerClick(option)}
-                                disabled={showFeedback}
-                            >
-                                {option}
-                            </button>
-                        );
-                    })}
-                </div>
-
-                {showFeedback && (
-                    <p className="quiz-feedback">
-                        {selectedAnswer === currentQuestion.correctAnswer
-                            ? "Correct!"
-                            : `Correct answer: ${currentQuestion.correctAnswer}`}
-                    </p>
-                )}
-            </div>
-
-            <div className="button-group">
-                <button
-                    className="primary-btn"
-                    onClick={handleNext}
-                    disabled={!showFeedback}
-                >
-                    {currentIndex === quizQuestions.length - 1 ? "Finish Quiz" : "Next Question"}
-                </button>
-            </div>
+            </section>
         </div>
     );
 }
 
-export default Quiz;
+export default SetDetail;
