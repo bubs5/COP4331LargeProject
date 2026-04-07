@@ -11,8 +11,8 @@ import {
     deleteStudySet,
 } from "../services/setsService";
 
-function SetDetail(){
-    //get setID from url
+function SetDetail() {
+    // get setID from url
     const { setId } = useParams();
     const navigate = useNavigate();
 
@@ -20,22 +20,22 @@ function SetDetail(){
     const [cards, setCards] = useState<Flashcard[]>([]);
     const [term, setTerm] = useState("");
     const [definition, setDefinition] = useState("");
-    const [editingCardId, setEditingCardId] = useState<number | null>(null);
+    const [editingCardId, setEditingCardId] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
 
-    //data fetching
-    async function loadSetData(){
+    // data fetching
+    async function loadSetData() {
         if (!setId) return;
 
-        try{
+        try {
             setLoading(true);
             const [setData, cardData] = await Promise.all([
                 getStudySetById(setId),
                 getCardsForSet(setId),
             ]);
 
-            if (!setData){
+            if (!setData) {
                 setError("Study set not found.");
                 return;
             }
@@ -43,25 +43,25 @@ function SetDetail(){
             setStudySet(setData);
             setCards(cardData);
             localStorage.setItem("lastSet", JSON.stringify(setData));
-        } catch (err){
+        } catch (err) {
             console.error(err);
             setError("Failed to load this study set.");
-        } finally{
+        } finally {
             setLoading(false);
         }
     }
 
-    useEffect(() =>{
+    useEffect(() => {
         loadSetData();
     }, [setId]);
 
-    //add or update a card
-    async function handleSubmitCard(e: React.FormEvent){
+    // add or update a card
+    async function handleSubmitCard(e: React.FormEvent) {
         e.preventDefault();
         if (!setId || !term.trim() || !definition.trim()) return;
 
         try {
-            if (editingCardId !== null){
+            if (editingCardId !== null) {
                 await updateCardInSet(editingCardId, { term, definition });
             } else {
                 await createCardForSet(setId, { term, definition });
@@ -71,40 +71,40 @@ function SetDetail(){
             setDefinition("");
             setEditingCardId(null);
             await loadSetData();
-        } catch (err){
+        } catch (err) {
             console.error(err);
             setError("Failed to save flashcard.");
         }
     }
-    //handles edits
-    function handleEdit(card: Flashcard){
+
+    // handles edits
+    function handleEdit(card: Flashcard) {
         setTerm(card.term);
         setDefinition(card.definition);
         setEditingCardId(card.id);
     }
 
-    //delete a card
-    async function handleDeleteCard(cardId: number){
-        //condirm the deletion
+    // delete a card
+    async function handleDeleteCard(cardId: string) {
         const confirmed = window.confirm("Delete this flashcard?");
         if (!confirmed) return;
 
-        try{
+        try {
             await deleteCardFromSet(cardId);
             await loadSetData();
-        } catch (err){
+        } catch (err) {
             console.error(err);
             setError("Failed to delete card.");
         }
     }
-    //deletes the entire set
-    async function handleDeleteSet(){
+
+    // deletes the entire set
+    async function handleDeleteSet() {
         if (!studySet) return;
-        //confirm deletion
         const confirmed = window.confirm("Delete this entire study set?");
         if (!confirmed) return;
 
-        try{
+        try {
             await deleteStudySet(studySet.id);
             navigate("/sets");
         } catch (err) {
@@ -113,11 +113,11 @@ function SetDetail(){
         }
     }
 
-    if (loading){
+    if (loading) {
         return <div className="page-state">Loading set...</div>;
     }
 
-    if (error && !studySet){
+    if (error && !studySet) {
         return (
             <div className="page-state error-state">
                 <h2>{error}</h2>
@@ -130,7 +130,7 @@ function SetDetail(){
 
     if (!studySet) return null;
 
-    return(
+    return (
         <div className="set-detail-page">
             <div className="set-detail-header">
                 <button className="secondary-btn" onClick={() => navigate("/sets")}>
@@ -159,7 +159,9 @@ function SetDetail(){
             {error && <div className="page-state error-state">{error}</div>}
 
             <section className="card-editor-section">
-                <h2>{editingCardId !== null ? "Edit Flashcard" : "Add Flashcard"}</h2>
+                <h2>
+                    {editingCardId !== null ? "Edit Flashcard" : "Add Flashcard"}
+                </h2>
 
                 <form onSubmit={handleSubmitCard} className="card-form">
                     <label>Term</label>

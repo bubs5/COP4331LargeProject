@@ -1,211 +1,158 @@
-//all fetched come in through this page
-import { flashcards as seedCards, studySets as seedSets } from '../data/testData';
 import type { Flashcard, StudySet } from '../types';
 
-const SETS_KEY = 'study_sets';
-const CARDS_KEY = 'study_cards';
-const USE_MOCK_DATA = true; //set to false when api is ready
-const urlBase = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'; //replace with api link wen ready
+const urlBase = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
-function seedLocalData(){
-    if (!localStorage.getItem(SETS_KEY)){
-        localStorage.setItem(SETS_KEY, JSON.stringify(seedSets));
+// Helper to get the stored user data (for userId and token)
+function getUserData(): { id: string; token: string } | null {
+    const raw = localStorage.getItem('user_data');
+    if (!raw) return null;
+    try {
+        const parsed = JSON.parse(raw);
+        return { id: parsed.id, token: parsed.token || '' };
+    } catch {
+        return null;
     }
+}
 
-    if (!localStorage.getItem(CARDS_KEY)){
-        localStorage.setItem(CARDS_KEY, JSON.stringify(seedCards));
+// Helper to build auth headers
+function authHeaders(): Record<string, string> {
+    const user = getUserData();
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (user?.token) {
+        headers['Authorization'] = `Bearer ${user.token}`;
     }
+    return headers;
 }
 
-function readSets(): StudySet[]{
-    seedLocalData();
-    return JSON.parse(localStorage.getItem(SETS_KEY) || '[]');
+// Maps a raw API set object (with _id) to the frontend StudySet shape
+function mapSet(raw: any): StudySet {
+    return {
+        id: raw._id || raw.id,
+        title: raw.title,
+        description: raw.description,
+        cardCount: raw.cardCount ?? 0,
+        createdAt: raw.createdAt,
+        updatedAt: raw.updatedAt,
+    };
 }
 
-function writeSets(sets: StudySet[]){
-    localStorage.setItem(SETS_KEY, JSON.stringify(sets));
+// Maps a raw API card object (with _id) to the frontend Flashcard shape
+function mapCard(raw: any): Flashcard {
+    return {
+        id: raw._id || raw.id,
+        term: raw.term,
+        definition: raw.definition,
+        setId: raw.setId,
+    };
 }
 
-function readCards(): Flashcard[]{
-    seedLocalData();
-    return JSON.parse(localStorage.getItem(CARDS_KEY) || '[]');
-}
+// ─── Study Sets ───────────────────────────────────────────────
 
-function writeCards(cards: Flashcard[]){
-    localStorage.setItem(CARDS_KEY, JSON.stringify(cards));
-}
-//gathering study set info
-export async function getStudySets(): Promise<StudySet[]>{
-    if (USE_MOCK_DATA) {
-        return readSets().map((set) => ({
-            ...set,
-            cardCount: readCards().filter((card) => card.setId === set.id).length,
-        }));
-    }
+export async function getStudySets(): Promise<StudySet[]> {
+    const user = getUserData();
+    const url = user ? `${urlBase}/sets?userId=${user.id}` : `${urlBase}/sets`;
 
-    const response = await fetch(`${urlBase}/sets`);
+    const response = await fetch(url, { headers: authHeaders() });
+    if (!response.ok) throw new Error('Failed to fetch study sets');
+
     const data = await response.json();
-    return data.studySets;
+    return (data.studySets || []).map(mapSet);
 }
 
-export async function getStudySetById(setId: string): Promise<StudySet | null>{
-    if (USE_MOCK_DATA) {
-        const set = readSets().find((item) => item.id === setId);
-        if (!set) return null;
-        return {
-            ...set,
-            cardCount: readCards().filter((card) => card.setId === set.id).length,
-        };
-    }
-
-    const response = await fetch(`${urlBase}/sets/${setId}`);
+export async function getStudySetById(setId: string): Promise<StudySet | null> {
+    const response = await fetch(`${urlBase}/sets/${setId}`, { headers: authHeaders() });
     if (!response.ok) return null;
+
     const data = await response.json();
-    return data.studySet;
+    return data.studySet ? mapSet(data.studySet) : null;
 }
-//creating study set
-export async function createStudySet(payload: Pick<StudySet, 'title' | 'description'>): Promise<StudySet>{
-    if (USE_MOCK_DATA){
-        const sets = readSets();
-        const newSet: StudySet = {
-            id: Date.now().toString(),
+
+export async function createStudySet(
+    payload: Pick<StudySet, 'title' | 'description'>,
+): Promise<StudySet> {
+    const user = getUserData();
+
+    const response = await fetch(`${urlBase}/sets`, {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({
             title: payload.title.trim(),
             description: payload.description.trim(),
-            cardCount: 0,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-        };
-
-        writeSets([newSet, ...sets]);
-        return newSet;
-    }
-
-    const response = await fetch(`${urlBase}/sets`,{
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+            userId: user?.id,
+        }),
     });
+
+    if (!response.ok) throw new Error('Failed to create study set');
+
     const data = await response.json();
-    return data.studySet;
+    return mapSet(data.studySet);
 }
 
-//delete studyset
-export async function deleteStudySet(setId: string): Promise<void>{
-    if (USE_MOCK_DATA) {
-        const nextSets = readSets().filter((set) => set.id !== setId);
-        const nextCards = readCards().filter((card) => card.setId !== setId);
-
-        writeSets(nextSets);
-        writeCards(nextCards);
-        return;
-    }
-
-    await fetch(`${urlBase}/sets/${setId}`,{
-        method: "DELETE",
+export async function deleteStudySet(setId: string): Promise<void> {
+    const response = await fetch(`${urlBase}/sets/${setId}`, {
+        method: 'DELETE',
+        headers: authHeaders(),
     });
+
+    if (!response.ok) throw new Error('Failed to delete study set');
 }
 
-//getting the specific flashcards from each set
-export async function getCardsForSet(setId: string): Promise<Flashcard[]>{
-    if (USE_MOCK_DATA) {
-        return readCards().filter((card) => card.setId === setId);
-    }
+// ─── Flashcards ───────────────────────────────────────────────
 
-    const response = await fetch(`${urlBase}/sets/${setId}/cards`);
+export async function getCardsForSet(setId: string): Promise<Flashcard[]> {
+    const response = await fetch(`${urlBase}/sets/${setId}/cards`, {
+        headers: authHeaders(),
+    });
+
+    if (!response.ok) throw new Error('Failed to fetch cards');
+
     const data = await response.json();
-    return data.flashcards || [];
+    return (data.flashcards || []).map(mapCard);
 }
-//creating flashcards for each set
+
 export async function createCardForSet(
     setId: string,
     payload: Pick<Flashcard, 'term' | 'definition'>,
 ): Promise<Flashcard> {
-    if (USE_MOCK_DATA) {
-        const cards = readCards();
-        const newCard: Flashcard = {
-            id: Date.now(),
-            setId,
+    const response = await fetch(`${urlBase}/sets/${setId}/cards`, {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({
             term: payload.term.trim(),
             definition: payload.definition.trim(),
-        };
-
-        writeCards([...cards, newCard]);
-        const sets = readSets().map((set) =>
-            set.id === setId
-                ? {
-                    ...set,
-                    cardCount: (set.cardCount || 0) + 1,
-                    updatedAt: new Date().toISOString(),
-                }
-                : set,
-        );
-        writeSets(sets);
-        return newCard;
-    }
-
-    const response = await fetch(`${urlBase}/sets/${setId}/cards`,{
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        }),
     });
+
+    if (!response.ok) throw new Error('Failed to create card');
+
     const data = await response.json();
-    return data.flashcard;
+    return mapCard(data.flashcard);
 }
-//update set
+
 export async function updateCardInSet(
-    cardId: number,
+    cardId: string,
     payload: Pick<Flashcard, 'term' | 'definition'>,
 ): Promise<Flashcard | null> {
-    if (USE_MOCK_DATA) {
-        const cards = readCards();
-        let updatedCard: Flashcard | null = null;
-
-        const nextCards = cards.map((card) =>{
-            if (card.id !== cardId) return card;
-            updatedCard = {
-                ...card,
-                term: payload.term.trim(),
-                definition: payload.definition.trim(),
-            };
-            return updatedCard;
-        });
-
-        writeCards(nextCards);
-        return updatedCard;
-    }
-
-    const response = await fetch(`${urlBase}/cards/${cardId}`,{
+    const response = await fetch(`${urlBase}/cards/${cardId}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        headers: authHeaders(),
+        body: JSON.stringify({
+            term: payload.term.trim(),
+            definition: payload.definition.trim(),
+        }),
     });
+
     if (!response.ok) return null;
+
     const data = await response.json();
-    return data.flashcard;
+    return mapCard(data.flashcard);
 }
-//delete flashcard
-export async function deleteCardFromSet(cardId: number): Promise<void>{
-    if (USE_MOCK_DATA) {
-        const cards = readCards();
-        const deletedCard = cards.find((card) => card.id === cardId);
-        writeCards(cards.filter((card) => card.id !== cardId));
 
-        if (deletedCard) {
-            const sets = readSets().map((set) =>
-                set.id === deletedCard!.setId
-                    ? {
-                        ...set,
-                        cardCount: Math.max((set.cardCount || 1) - 1, 0),
-                        updatedAt: new Date().toISOString(),
-                    }
-                    : set,
-            );
-            writeSets(sets);
-        }
-        return;
-    }
-
-    await fetch(`${urlBase}/cards/${cardId}`,{
+export async function deleteCardFromSet(cardId: string): Promise<void> {
+    const response = await fetch(`${urlBase}/cards/${cardId}`, {
         method: 'DELETE',
+        headers: authHeaders(),
     });
+
+    if (!response.ok) throw new Error('Failed to delete card');
 }

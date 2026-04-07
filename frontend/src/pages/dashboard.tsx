@@ -1,10 +1,29 @@
+import { useEffect, useState } from "react";
 import "../css/dashboard.css";
-import { studySets } from "../data/testData";
+import { getStudySets } from "../services/setsService";
+import type { StudySet } from "../types";
 import { useNavigate } from "react-router-dom";
 
 function Dashboard() {
     const navigate = useNavigate();
     const lastSet = JSON.parse(localStorage.getItem("lastSet") || "null");
+
+    const [sets, setSets] = useState<StudySet[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        async function loadSets() {
+            try {
+                const fetched = await getStudySets();
+                setSets(fetched);
+            } catch (err) {
+                console.error("Failed to load sets for dashboard:", err);
+            } finally {
+                setLoading(false);
+            }
+        }
+        loadSets();
+    }, []);
 
     return (
         <div className="dashboard">
@@ -45,21 +64,27 @@ function Dashboard() {
                     </span>
                 </div>
 
-                {studySets.slice(0, 3).map((set) => (           
-                   <div
-                        key={set.id}
-                        className="study-set-preview"
-                        onClick={() => {
-                            localStorage.setItem("lastSet", JSON.stringify(set));
-                            navigate("/flashcards");
-                        }}
-                        style={{ cursor: "pointer" }}
-                    >
-                        <h3>{set.title}</h3>
-                        <p>{set.description}</p>
-                        <p>{set.cardCount} cards</p>
-                    </div>
-                ))}
+                {loading ? (
+                    <p>Loading sets...</p>
+                ) : sets.length === 0 ? (
+                    <p>No study sets yet. Create one!</p>
+                ) : (
+                    sets.slice(0, 3).map((set) => (
+                        <div
+                            key={set.id}
+                            className="study-set-preview"
+                            onClick={() => {
+                                localStorage.setItem("lastSet", JSON.stringify(set));
+                                navigate(`/flashcards?setId=${set.id}`);
+                            }}
+                            style={{ cursor: "pointer" }}
+                        >
+                            <h3>{set.title}</h3>
+                            <p>{set.description}</p>
+                            <p>{set.cardCount} cards</p>
+                        </div>
+                    ))
+                )}
             </div>
         </div>
     );
