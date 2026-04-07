@@ -143,20 +143,17 @@ body {
         padding: 24px 16px 50px;
     }
 
-    .dashboard-title 
-    {
+    .dashboard-title {
         margin-bottom: 22px;
         font-size: 2rem;
     }
 
-    .section-header 
-    {
+    .section-header {
         flex-direction: column;
         align-items: flex-start;
     }
 
-    .dashboard-card
-    {
+    .dashboard-card {
         padding: 18px 16px;
         border-radius: 22px;
     }
