@@ -1,10 +1,34 @@
 import "../css/dashboard.css";
-import { studySets } from "../data/testData";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import type { StudySet } from "../types";
+import { getStudySets } from "../services/setsService";
 
 function Dashboard() {
     const navigate = useNavigate();
     const lastSet = JSON.parse(localStorage.getItem("lastSet") || "null");
+
+    const [sets, setSets] = useState<StudySet[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
+
+    useEffect(() => {
+        async function loadSets() {
+            try {
+                setLoading(true);
+                setError("");
+                const data = await getStudySets();
+                setSets(data);
+            } catch (err) {
+                console.error(err);
+                setError("Failed to load study sets.");
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        loadSets();
+    }, []);
 
     return (
         <div className="dashboard">
@@ -13,8 +37,8 @@ function Dashboard() {
             <div
                 className="dashboard-card"
                 onClick={() => {
-                    if (lastSet) {
-                    navigate(`/flashcards?setId=${lastSet.id}`);                    }
+                    if (lastSet?.id) {
+                        navigate(`/flashcards?setId=${lastSet.id}`);
                     }
                 }}
                 style={{ cursor: lastSet ? "pointer" : "default" }}
@@ -33,33 +57,43 @@ function Dashboard() {
 
             <div className="dashboard-card">
                 <div className="section-header">
-                    <h2>Your Study Sets</h2>
+                    <h2>Your Sets</h2>
                     <span
                         className="view-all"
                         onClick={(e) => {
                             e.stopPropagation();
-                            navigate("/sets");
+                            navigate("/flashcards");
                         }}
                     >
                         View All
                     </span>
                 </div>
 
-                {studySets.slice(0, 3).map((set) => (           
-                   <div
-                        key={set.id}
-                        className="study-set-preview"
-                        onClick={() => {
-                            localStorage.setItem("lastSet", JSON.stringify(set));
-                            navigate("/flashcards");
-                        }}
-                        style={{ cursor: "pointer" }}
-                    >
-                        <h3>{set.title}</h3>
-                        <p>{set.description}</p>
-                        <p>{set.cardCount} cards</p>
+                {loading ? (
+                    <p>Loading study sets...</p>
+                ) : error ? (
+                    <p>{error}</p>
+                ) : sets.length === 0 ? (
+                    <p>No study sets yet.</p>
+                ) : (
+                    <div className="dashboard-sets-grid">
+                        {sets.slice(0, 3).map((set) => (
+                            <div
+                                key={set.id}
+                                className="study-set-preview"
+                                onClick={() => {
+                                    localStorage.setItem("lastSet", JSON.stringify(set));
+                                    navigate(`/sets/${set.id}`);
+                                }}
+                                style={{ cursor: "pointer" }}
+                            >
+                                <h3>{set.title}</h3>
+                                <p>{set.description}</p>
+                                <p>{set.cardCount} cards</p>
+                            </div>
+                        ))}
                     </div>
-                ))}
+                )}
             </div>
         </div>
     );
