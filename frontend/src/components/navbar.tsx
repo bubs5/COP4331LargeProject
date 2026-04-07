@@ -10,12 +10,11 @@ function Navbar() {
 
     return (
         <nav className="navbar">
-            <h2>Title</h2>
+            <h2>StudyRewards</h2>
 
             <div className="nav-links">
                 <Link to="/dashboard">Dashboard</Link>
-                <Link to="/sets">Study Sets</Link>
-                <Link to="/flashcards">Flashcards</Link>
+                <Link to="/flashcards">Study Sets</Link>
                 <Link to="/quiz">Quiz</Link>
                 <button onClick={handleLogout}>Logout</button>
             </div>
