@@ -14,7 +14,7 @@ function Dashboard() {
                 className="dashboard-card"
                 onClick={() => {
                     if (lastSet) {
-                        navigate("/flashcards");
+                    navigate(`/flashcards?setId=${lastSet.id}`);                    }
                     }
                 }}
                 style={{ cursor: lastSet ? "pointer" : "default" }}
