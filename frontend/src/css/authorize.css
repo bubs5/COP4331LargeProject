@@ -263,6 +263,43 @@ a{
     color: #5f708a;
 }
 
+/*  forgot password/reset/verify */
+
+.authSubtext {
+    text-align: center;
+    font-size: 14px;
+    color: #7b8cad;
+    line-height: 1.6;
+    margin-bottom: 4px;
+}
+
+.authHighlight {
+    color: #a5b4fc;
+    font-weight: 600;
+}
+
+.authConfirm {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+}
+
+.statusSuccess {
+    min-height: 18px;
+    font-size: 14px;
+    text-align: center;
+    color: #86efac;
+}
+
+.statusError {
+    min-height: 18px;
+    font-size: 14px;
+    text-align: center;
+    color: #f87171;
+}
+
 /*  MOBILE  */
 
 

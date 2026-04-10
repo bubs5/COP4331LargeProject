@@ -187,7 +187,7 @@ function Register() {
                         </label>
 
                         <button type="submit" className="btn primaryBtn" disabled={isLoading}>
-                            {isLoading ? "Creating Account..." : "Create Account"}
+                            {isLoading ? "Creating Account" : "Create Account"}
                         </button>
 
                         <p className="helperText">

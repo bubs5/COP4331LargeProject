@@ -4,6 +4,8 @@ import Home from "./pages/home";
 import Login from "./pages/login";
 import Register from "./pages/register";
 import ForgotPassword from "./pages/forgotpass";
+import ResetPassword from "./pages/resetpass";
+import VerifyEmail from "./pages/verifyemail";
 import Dashboard from "./pages/dashboard";
 import Sets from "./pages/sets";
 import SetDetail from "./pages/SetDetail.tsx";
@@ -27,6 +29,8 @@ function App() {
                     <Route path="/login" element={<Login />} />
                     <Route path="/register" element={<Register />} />
                     <Route path="/forgot-password" element={<ForgotPassword />} />
+                    <Route path="/reset-password" element={<ResetPassword />} />
+                    <Route path="/verify-email" element={<VerifyEmail />} />
                     <Route path="/dashboard" element={<Dashboard />} />
                     <Route path="/sets" element={<Sets />} />
                     <Route path="/sets/:setId" element={<SetDetail />} />
