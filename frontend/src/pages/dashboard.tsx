@@ -34,21 +34,27 @@ function Dashboard() {
         <div className="dashboard">
             <h1 className="dashboard-title">Welcome Back</h1>
 
-            <div
-                className="dashboard-card"
-                onClick={() => {
-                    if (lastSet?.id) {
-                        navigate(`/flashcards?setId=${lastSet.id}`);
-                    }
-                }}
-                style={{ cursor: lastSet ? "pointer" : "default" }}
-            >
+            <div className="dashboard-card">
                 <h2>Recent Activity</h2>
 
                 {lastSet ? (
-                    <div>
-                        <h3>{lastSet.title}</h3>
-                        <p>{lastSet.cardCount} cards</p>
+                    <div
+                        className="dashboard-set-row"
+                        onClick={() => {
+                            if (lastSet?.id) {
+                                navigate(`/flashcards?setId=${lastSet.id}`);
+                            }
+                        }}
+                        style={{ cursor: "pointer" }}
+                    >
+                        <div className="dashboard-set-copy">
+                            <h3>{lastSet.title}</h3>
+                            <p>{lastSet.description || "Last opened study set"}</p>
+                        </div>
+
+                        <span className="dashboard-set-count">
+                            {lastSet.cardCount} cards
+                        </span>
                     </div>
                 ) : (
                     <p>No recent activity</p>
@@ -77,27 +83,27 @@ function Dashboard() {
                     <p>No study sets yet.</p>
                 ) : (
                     <div className="dashboard-sets-list">
-    {sets.slice(0, 3).map((set) => (
-        <div
-            key={set.id}
-            className="dashboard-set-row"
-            onClick={() => {
-                localStorage.setItem("lastSet", JSON.stringify(set));
-                navigate(`/sets/${set.id}`);
-            }}
-            style={{ cursor: "pointer" }}
-        >
-            <div className="dashboard-set-copy">
-                <h3>{set.title}</h3>
-                <p>{set.description}</p>
-            </div>
+                        {sets.slice(0, 3).map((set) => (
+                            <div
+                                key={set.id}
+                                className="dashboard-set-row"
+                                onClick={() => {
+                                    localStorage.setItem("lastSet", JSON.stringify(set));
+                                    navigate(`/sets/${set.id}`);
+                                }}
+                                style={{ cursor: "pointer" }}
+                            >
+                                <div className="dashboard-set-copy">
+                                    <h3>{set.title}</h3>
+                                    <p>{set.description}</p>
+                                </div>
 
-            <span className="dashboard-set-count">
-                {set.cardCount} cards
-            </span>
-        </div>
-    ))}
-</div>
+                                <span className="dashboard-set-count">
+                                    {set.cardCount} cards
+                                </span>
+                            </div>
+                        ))}
+                    </div>
                 )}
             </div>
         </div>
