@@ -1,202 +1,229 @@
-//change when api is installed
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../models/studyset.dart';
 import '../models/flashcard.dart';
+import '../config.dart';
 import 'localstorage.dart';
 
+//SetsService
+// flip AppConfig.useMockData = false
+// set AppConfig.baseUrl to your API to go live.
+
 class SetsService {
-  static const bool useMockData = true;
+  static const String _setsKey = 'study_sets';
+  static const String _cardsKey = 'flashcards';
 
-  // Change this later to your real API URL
-  static const String baseUrl = '';
-
-  static const String setsKey = 'study_sets';
-  static const String cardsKey = 'flashcards';
-
+  // ─all sets
   Future<List<StudySet>> getStudySets() async{
-    if (useMockData){
-      return _getMockStudySets();
-    }
+    if (AppConfig.useMockData) return _mockGetStudySets();
 
-    final response = await http.get(Uri.parse('$baseUrl/sets'));
-
+    final response = await http.get(Uri.parse('${AppConfig.baseUrl}/sets')); //api
     if (response.statusCode == 200) {
-      final List<dynamic> data = jsonDecode(response.body);
-      return data.map((item) => StudySet.fromJson(item)).toList();
-    } else {
-      throw Exception('Failed to load study sets');
+      final data = jsonDecode(response.body);
+      final List list = data['studySets'] ?? data;
+      return list.map((item) => StudySet.fromJson(item)).toList();
     }
+    throw Exception('Failed to load study sets');
   }
 
+  // set by id
   Future<StudySet?> getStudySetById(String setId) async{
-    if (useMockData){
-      final sets = await _getMockStudySets();
-      try {
-        return sets.firstWhere((set) => set.id == setId);
+    if (AppConfig.useMockData){
+      final sets = await _mockGetStudySets();
+      try{
+        return sets.firstWhere((s) => s.id == setId);
       }
       catch (_){
         return null;
       }
     }
 
-    final response = await http.get(Uri.parse('$baseUrl/sets/$setId'));
-
-    if (response.statusCode == 200){
-      return StudySet.fromJson(jsonDecode(response.body));
+    final response =
+    await http.get(Uri.parse('${AppConfig.baseUrl}/sets/$setId'));
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return StudySet.fromJson(data['studySet'] ?? data);
     }
-    else{
-      return null;
-    }
+    return null;
   }
 
-  Future<List<Flashcard>> getCardsForSet(String setId) async {
-    if (useMockData){
-      return _getMockCardsForSet(setId);
-    }
+  // cards for set
+  Future<List<Flashcard>> getCardsForSet(String setId) async{
+    if (AppConfig.useMockData) return _mockGetCardsForSet(setId);
 
-    final response = await http.get(Uri.parse('$baseUrl/sets/$setId/cards'));
-
-    if (response.statusCode == 200){
-      final List<dynamic> data = jsonDecode(response.body);
-      return data.map((item) => Flashcard.fromJson(item)).toList();
+    final response =
+    await http.get(Uri.parse('${AppConfig.baseUrl}/sets/$setId/cards'));
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      final List list = data['flashcards'] ?? data;
+      return list.map((item) => Flashcard.fromJson(item)).toList();
     }
-    else{
-      throw Exception('Failed to load flashcards');
-    }
+    throw Exception('Failed to load flashcards');
   }
 
-  Future<void> createStudySet({
+  // create set
+  Future<StudySet> createStudySet({
     required String title,
     required String description,
   }) async {
-    if (useMockData){
-      final setsRaw = await LocalStorageService.getList(setsKey);
-      final sets = setsRaw
-          .map((item) => StudySet.fromJson(Map<String, dynamic>.from(item)))
-          .toList();
-
+    if (AppConfig.useMockData){
+      final sets = await _mockGetStudySets();
       final newSet = StudySet(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
-        title: title,
-        description: description,
+        title: title.trim(),
+        description: description.trim(),
         cardCount: 0,
         createdAt: DateTime.now().toIso8601String(),
         updatedAt: DateTime.now().toIso8601String(),
       );
-
-      sets.add(newSet);
-
+      sets.insert(0, newSet);
       await LocalStorageService.saveList(
-        setsKey,
-        sets.map((set) => set.toJson()).toList(),
-      );
-      return;
+          _setsKey, sets.map((s) => s.toJson()).toList());
+      return newSet;
     }
 
     final response = await http.post(
-      Uri.parse('$baseUrl/sets'),
+      Uri.parse('${AppConfig.baseUrl}/sets'),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'title': title,
-        'description': description,
-      }),
+      body: jsonEncode({'title': title.trim(), 'description': description.trim()}),
     );
-
-    if (response.statusCode != 200 && response.statusCode != 201){
-      throw Exception('Failed to create study set');
+    if (response.statusCode == 200 || response.statusCode == 201){
+      final data = jsonDecode(response.body);
+      return StudySet.fromJson(data['studySet'] ?? data);
     }
+    throw Exception('Failed to create study set');
   }
 
-  Future<void> addCardToSet({
+  // delete set
+  Future<void> deleteStudySet(String setId) async{
+    if (AppConfig.useMockData) {
+      final sets = await _mockGetStudySets();
+      final cards = await _mockGetAllCards();
+      sets.removeWhere((s) => s.id == setId);
+      cards.removeWhere((c) => c.setId == setId);
+      await LocalStorageService.saveList(
+          _setsKey, sets.map((s) => s.toJson()).toList());
+      await LocalStorageService.saveList(
+          _cardsKey, cards.map((c) => c.toJson()).toList());
+      return;
+    }
+
+    await http.delete(Uri.parse('${AppConfig.baseUrl}/sets/$setId'));
+  }
+
+  // create card
+  Future<Flashcard> createCard({
     required String setId,
     required String term,
     required String definition,
-  }) async {
-    if (useMockData){
-      final cardsRaw = await LocalStorageService.getList(cardsKey);
-      final cards = cardsRaw
-          .map((item) => Flashcard.fromJson(Map<String, dynamic>.from(item)))
-          .toList();
-
+  }) async{
+    if (AppConfig.useMockData){
+      final cards = await _mockGetAllCards();
       final newCard = Flashcard(
         id: DateTime.now().millisecondsSinceEpoch,
         setId: setId,
-        term: term,
-        definition: definition,
+        term: term.trim(),
+        definition: definition.trim(),
       );
-
       cards.add(newCard);
-
       await LocalStorageService.saveList(
-        cardsKey,
-        cards.map((card) => card.toJson()).toList(),
-      );
-
-      final setsRaw = await LocalStorageService.getList(setsKey);
-      final sets = setsRaw
-          .map((item) => StudySet.fromJson(Map<String, dynamic>.from(item)))
-          .toList();
-
-      final updatedSets = sets.map((set){
-        if (set.id == setId) {
-          return StudySet(
-            id: set.id,
-            title: set.title,
-            description: set.description,
-            cardCount: set.cardCount + 1,
-            createdAt: set.createdAt,
-            updatedAt: DateTime.now().toIso8601String(),
-          );
-        }
-        return set;
-      }).toList();
-
-      await LocalStorageService.saveList(
-        setsKey,
-        updatedSets.map((set) => set.toJson()).toList(),
-      );
-
-      return;
+          _cardsKey, cards.map((c) => c.toJson()).toList());
+      await _mockIncrementCardCount(setId, 1);
+      return newCard;
     }
 
     final response = await http.post(
-      Uri.parse('$baseUrl/sets/$setId/cards'),
+      Uri.parse('${AppConfig.baseUrl}/sets/$setId/cards'),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'term': term,
-        'definition': definition,
-      }),
+      body: jsonEncode({'term': term.trim(), 'definition': definition.trim()}),
     );
-
-    if (response.statusCode != 200 && response.statusCode != 201) {
-      throw Exception('Failed to add card');
+    if (response.statusCode == 200 || response.statusCode == 201){
+      final data = jsonDecode(response.body);
+      return Flashcard.fromJson(data['flashcard'] ?? data);
     }
+    throw Exception('Failed to add card');
   }
 
-  Future<List<StudySet>> _getMockStudySets() async{
-    final stored = await LocalStorageService.getList(setsKey);
+  // update card
+  Future<Flashcard?> updateCard({
+    required int cardId,
+    required String term,
+    required String definition,
+  }) async {
+    if (AppConfig.useMockData){
+      final cards = await _mockGetAllCards();
+      Flashcard? updated;
+      final next = cards.map((c){
+        if (c.id != cardId) return c;
+        updated = Flashcard(
+          id: c.id,
+          setId: c.setId,
+          term: term.trim(),
+          definition: definition.trim(),
+        );
+        return updated!;
+      }).toList();
+      await LocalStorageService.saveList(
+          _cardsKey, next.map((c) => c.toJson()).toList());
+      return updated;
+    }
 
-    if (stored.isNotEmpty){
+    final response = await http.put(
+      Uri.parse('${AppConfig.baseUrl}/cards/$cardId'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'term': term.trim(), 'definition': definition.trim()}),
+    );
+    if (response.statusCode == 200){
+      final data = jsonDecode(response.body);
+      return Flashcard.fromJson(data['flashcard'] ?? data);
+    }
+    return null;
+  }
+
+  // delete card
+  Future<void> deleteCard(int cardId) async{
+    if (AppConfig.useMockData){
+      final cards = await _mockGetAllCards();
+      final deleted = cards.firstWhere(
+            (c) => c.id == cardId,
+        orElse: () => Flashcard(id: -1, term: '', definition: '', setId: ''),
+      );
+      cards.removeWhere((c) => c.id == cardId);
+      await LocalStorageService.saveList(
+          _cardsKey, cards.map((c) => c.toJson()).toList());
+      if (deleted.id != -1){
+        await _mockIncrementCardCount(deleted.setId, -1);
+      }
+      return;
+    }
+
+    await http.delete(Uri.parse('${AppConfig.baseUrl}/cards/$cardId'));
+  }
+
+  // mock helpers
+  Future<List<StudySet>> _mockGetStudySets() async{
+    final stored = await LocalStorageService.getList(_setsKey);
+    if (stored.isNotEmpty) {
       return stored
           .map((item) => StudySet.fromJson(Map<String, dynamic>.from(item)))
           .toList();
     }
 
-    final starterSets = [
+    //seed initial data
+    final seed = [
       StudySet(
         id: '1',
-        title: 'Biology Chapter 1',
-        description: 'Basic biology terms',
+        title: 'Addition',
+        description: 'Basic addition',
         cardCount: 2,
         createdAt: DateTime.now().toIso8601String(),
         updatedAt: DateTime.now().toIso8601String(),
       ),
       StudySet(
         id: '2',
-        title: 'Spanish Basics',
-        description: 'Common Spanish vocabulary',
+        title: 'Multiplication',
+        description: 'basic multiplication',
         cardCount: 2,
         createdAt: DateTime.now().toIso8601String(),
         updatedAt: DateTime.now().toIso8601String(),
@@ -204,57 +231,48 @@ class SetsService {
     ];
 
     await LocalStorageService.saveList(
-      setsKey,
-      starterSets.map((set) => set.toJson()).toList(),
-    );
+        _setsKey, seed.map((s) => s.toJson()).toList());
 
-    final starterCards = [
-      Flashcard(
-        id: 1,
-        setId: '1',
-        term: 'Cell',
-        definition: 'The basic unit of life',
-      ),
-      Flashcard(
-        id: 2,
-        setId: '1',
-        term: 'DNA',
-        definition: 'Genetic material in living things',
-      ),
-      Flashcard(
-        id: 3,
-        setId: '2',
-        term: 'Hola',
-        definition: 'Hello',
-      ),
-      Flashcard(
-        id: 4,
-        setId: '2',
-        term: 'Gracias',
-        definition: 'Thank you',
-      ),
+    final seedCards = [
+      Flashcard(id: 1, setId: '1', term: '1+1', definition: '2'),
+      Flashcard(id: 2, setId: '1', term: '2+2', definition: '4'),
+      Flashcard(id: 3, setId: '2', term: '1x1', definition: '1'),
+      Flashcard(id: 4, setId: '2', term: '2x2', definition: '4'),
     ];
-
     await LocalStorageService.saveList(
-      cardsKey,
-      starterCards.map((card) => card.toJson()).toList(),
-    );
+        _cardsKey, seedCards.map((c) => c.toJson()).toList());
 
-    return starterSets;
+    return seed;
   }
 
-  Future<List<Flashcard>> _getMockCardsForSet(String setId) async {
-    final stored = await LocalStorageService.getList(cardsKey);
+  Future<List<Flashcard>> _mockGetCardsForSet(String setId) async{
+    //ensuring seeds exist
+    await _mockGetStudySets();
+    final all = await _mockGetAllCards();
+    return all.where((c) => c.setId == setId).toList();
+  }
 
-    if (stored.isEmpty) {
-      await _getMockStudySets();
-    }
-
-    final refreshed = await LocalStorageService.getList(cardsKey);
-
-    return refreshed
+  Future<List<Flashcard>> _mockGetAllCards() async {
+    final stored = await LocalStorageService.getList(_cardsKey);
+    return stored
         .map((item) => Flashcard.fromJson(Map<String, dynamic>.from(item)))
-        .where((card) => card.setId == setId)
         .toList();
+  }
+
+  Future<void> _mockIncrementCardCount(String setId, int delta) async {
+    final sets = await _mockGetStudySets();
+    final updated = sets.map((s) {
+      if (s.id != setId) return s;
+      return StudySet(
+        id: s.id,
+        title: s.title,
+        description: s.description,
+        cardCount: (s.cardCount + delta).clamp(0, 9999),
+        createdAt: s.createdAt,
+        updatedAt: DateTime.now().toIso8601String(),
+      );
+    }).toList();
+    await LocalStorageService.saveList(
+        _setsKey, updated.map((s) => s.toJson()).toList());
   }
 }
