@@ -130,10 +130,10 @@ function SetDetail(){
 
     if (!studySet) return null;
 
-    return(
+     return(
         <div className="set-detail-page">
             <div className="set-detail-header">
-                <button className="secondary-btn" onClick={() => navigate("/sets")}>
+                <button className="secondary-btn" onClick={() => navigate("/flashcards")}>
                     Back to Sets
                 </button>
 
@@ -150,8 +150,15 @@ function SetDetail(){
                     >
                         Study This Set
                     </button>
+
+                      <button
+                className="secondary-btn"
+                onClick={() => navigate(`/quiz?setId=${studySet.id}`)}
+            >
+                Quiz This Set
+            </button>
                     <button className="danger-btn" onClick={handleDeleteSet}>
-                        Delete Set
+                        Delete This Set
                     </button>
                 </div>
             </div>
