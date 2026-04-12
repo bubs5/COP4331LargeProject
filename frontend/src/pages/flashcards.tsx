@@ -198,12 +198,12 @@ function Flashcards() {
 
             <div className="flashcards-state">
                 <div className="flashcards-actions">
-                    <span
-                        className="view-all"
-                        onClick={() => navigate('/sets')}
-                    >
-                        New Set
-                    </span>
+                   <button
+    className="primary-btn"
+    onClick={() => navigate('/sets')}
+>
+    New Set
+</button>
                 </div>
 
                 <div className="flashcards-heading">
@@ -227,39 +227,17 @@ function Flashcards() {
                             <div
                                 key={set.id}
                                 className="set-picker-card"
-                                onClick={() => setChosenSetId(set.id)}
+                                onClick={() => navigate(`/sets/${set.id}`)}
                                 style={{ cursor: 'pointer' }}
                             >
                                 <div className="set-picker-copy">
                                     <h3>{set.title}</h3>
                                     <p>{set.description}</p>
-
-                                    <span className="set-picker-count">
-                                        {set.cardCount} cards
-                                    </span>
                                 </div>
 
-                                <div className="set-card-actions">
-                                    <button
-                                        className="secondary-btn"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            navigate(`/sets/${set.id}`);
-                                        }}
-                                    >
-                                        Edit
-                                    </button>
-
-                                    <button
-                                        className="danger-btn"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleDeleteSet(set.id);
-                                        }}
-                                    >
-                                        Delete
-                                    </button>
-                                </div>
+                                <span className="set-picker-count">
+                                    {set.cardCount} cards
+                                </span>
                             </div>
                         ))
                     )}
@@ -323,34 +301,29 @@ function Flashcards() {
     return (
 
         <div className="flashcardContainer">
-            <div className="flashcards-topbar">
-                {/*clears all session data and returns to the picker */}
-                <button
-                    className="secondary-btn"
-                    onClick={() => {
-                        setChosenSetId('');
-                        setSelectedSet(null);
-                        setCards([]);
-                        setIndex(0);
-                        setShowDef(false);
-                        setSessionComplete(false);
-                        setKnownCards(new Set());
-                        setError('');
-                    }}
-                >
-                    Change Set
-                </button>
-                <div className="flashcards-title-block">
-                    <p className="eyebrow">Flashcards</p>
-                    <h1>{selectedSet?.title || 'Study Mode'}</h1>
-                    <p>{selectedSet?.description}</p>
-                </div>
-                <button className="secondary-btn" onClick={() => navigate(`/sets?setId=${selectedSet?.id || ''}`)}>
-                    Create New Set
-                </button>
+           <div className="flashcards-topbar">
+    <button
+        className="secondary-btn"
+        onClick={() => {
+            setChosenSetId('');
+            setSelectedSet(null);
+            setCards([]);
+            setIndex(0);
+            setShowDef(false);
+            setSessionComplete(false);
+            setKnownCards(new Set());
+            setError('');
+        }}
+    >
+        Change Set
+    </button>
 
-
-            </div>
+    <div className="flashcards-title-block">
+        <p className="eyebrow">Flashcards</p>
+        <h1>{selectedSet?.title || 'Study Mode'}</h1>
+        <p>{selectedSet?.description}</p>
+    </div>
+</div>
             {/*progress bar*/}
             <div className="progress-row">
                 <div className="progress-meta">

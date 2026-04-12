@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import "../css/quiz.css";
-import { getStudySets, getCardsForSet, getStudySetById, deleteStudySet } from "../services/setsService";import type { StudySet, Flashcard } from "../types";
+import { getCardsForSet, getStudySetById } from "../services/setsService";
+import type { StudySet, Flashcard } from "../types";
 //defines the structure of each quiz question
 type QuizQuestion = {
     id: number;
@@ -9,7 +10,6 @@ type QuizQuestion = {
     options: string[];
     correctAnswer: string;
 };
-
 //helper function to shuffle answers randomly
 function shuffleArray<T>(array: T[]): T[] {
     const copy = [...array];
@@ -24,23 +24,12 @@ function Quiz() {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
 
-    //all available study sets
-    const [studySets, setStudySets] = useState<StudySet[]>([]);
+    const chosenSetId = searchParams.get("setId") || "";
 
-    //selected set id (from URL or user click)
-    const [chosenSetId, setChosenSetId] = useState(searchParams.get("setId") || "");
-
-    //currently selected set object
     const [selectedSet, setSelectedSet] = useState<StudySet | null>(null);
-
-    //flashcards for selected set
     const [cards, setCards] = useState<Flashcard[]>([]);
 
-    //loading states
-    const [loadingSets, setLoadingSets] = useState(true);
-    const [loadingQuiz, setLoadingQuiz] = useState(false);
-
-    //error message
+    const [loadingQuiz, setLoadingQuiz] = useState(true);
     const [error, setError] = useState("");
 
     //quiz progress state
@@ -52,74 +41,56 @@ function Quiz() {
 
     //load all study sets when page loads
     useEffect(() => {
-        async function loadSets() {
-            try {
-                setLoadingSets(true);
-                setError("");
-                const data = await getStudySets();
-                setStudySets(data);
-            } catch (err) {
-                console.error(err);
-                setError("Failed to load study sets.");
-            } finally {
-                setLoadingSets(false);
-            }
+        if (!chosenSetId) {
+            navigate("/sets");
         }
-
-        loadSets();
-    }, []);
+    }, [chosenSetId, navigate]);
 
     //load selected set + its cards when chosenSetId changes
+
     useEffect(() => {
         async function loadQuizData() {
-
             //if no set selected, reset everything
-            if (!chosenSetId) {
-                setSelectedSet(null);
-                setCards([]);
-                return;
-            }
+
+            if (!chosenSetId) return;
 
             try {
                 setLoadingQuiz(true);
                 setError("");
-
                 //fetch set info and its cards at same time
+
                 const [fetchedSet, fetchedCards] = await Promise.all([
                     getStudySetById(chosenSetId),
                     getCardsForSet(chosenSetId),
                 ]);
-
                 //handle invalid set
+
                 if (!fetchedSet) {
                     setError("That study set could not be found.");
-                    setLoadingQuiz(false);
                     return;
                 }
-
                 //handle empty set
+
                 if (fetchedCards.length === 0) {
                     setSelectedSet(fetchedSet);
                     setCards([]);
                     setError("This set has no flashcards yet. Add cards before taking the quiz.");
-                    setLoadingQuiz(false);
                     return;
                 }
-
                 //store data
+
                 setSelectedSet(fetchedSet);
                 setCards(fetchedCards);
-
                 //reset quiz state
+
                 setCurrentIndex(0);
                 setSelectedAnswer("");
                 setShowFeedback(false);
                 setScore(0);
                 setQuizComplete(false);
-
                 //save last opened set
-                localStorage.setItem("lastSet", JSON.stringify(fetchedSet));
 
+                localStorage.setItem("lastSet", JSON.stringify(fetchedSet));
             } catch (err) {
                 console.error(err);
                 setError("Failed to load quiz data.");
@@ -130,17 +101,17 @@ function Quiz() {
 
         loadQuizData();
     }, [chosenSetId]);
-
     //convert flashcards into quiz questions
+
     const quizQuestions: QuizQuestion[] = useMemo(() => {
         return cards.map((card) => {
+                        //get wrong answers from other cards
 
-            //get wrong answers from other cards
             const wrongAnswers = cards
                 .filter((item) => item.id !== card.id)
                 .map((item) => item.definition);
-
             //pick 3 random wrong answers
+
             const randomWrong = shuffleArray(wrongAnswers).slice(0, 3);
 
             return {
@@ -151,21 +122,21 @@ function Quiz() {
             };
         });
     }, [cards]);
-
     //when user clicks an answer
+
     const handleAnswerClick = (answer: string) => {
         if (showFeedback) return;
 
         setSelectedAnswer(answer);
         setShowFeedback(true);
-
         //increase score if correct
+
         if (answer === quizQuestions[currentIndex].correctAnswer) {
             setScore((prev) => prev + 1);
         }
     };
-
     //move to next question
+
     const handleNext = () => {
         if (currentIndex === quizQuestions.length - 1) {
             setQuizComplete(true);
@@ -176,8 +147,8 @@ function Quiz() {
         setSelectedAnswer("");
         setShowFeedback(false);
     };
-
     //restart entire quiz
+
     const restartQuiz = () => {
         setCurrentIndex(0);
         setSelectedAnswer("");
@@ -186,113 +157,11 @@ function Quiz() {
         setQuizComplete(false);
     };
 
-    //delete a study set from the quiz picker
-    const handleDeleteSet = async (setId: string) => {
-        const confirmed = window.confirm("Delete this study set?");
-        if (!confirmed) return;
-
-        try {
-            await deleteStudySet(setId);
-
-            const updatedSets = await getStudySets();
-            setStudySets(updatedSets);
-
-            if (chosenSetId === setId) {
-                setChosenSetId("");
-                setSelectedSet(null);
-                setCards([]);
-            }
-        } catch (err) {
-            console.error(err);
-            setError("Failed to delete study set.");
-        }
-    };
-
     if (!chosenSetId) {
-        return (
-            <div className="quiz-container">
-
-                <div className="flashcards-actions">
-                    <span
-                        className="view-all"
-                        onClick={() => navigate("/sets")}
-                    >
-                        New Set
-                    </span>
-                </div>
-
-                <div className="flashcards-heading">
-                    <h1>Choose a set to quiz</h1>
-                    <p>Select a study set to begin.</p>
-                </div>
-
-                {loadingSets ? (
-                    <div className="quiz-state">
-                        <h2>Loading study sets...</h2>
-                    </div>
-                ) : error ? (
-                    <div className="quiz-state">
-                        <h2>{error}</h2>
-                        <button className="primary-btn" onClick={() => navigate("/dashboard")}>
-                            Back to Dashboard
-                        </button>
-                    </div>
-                ) : studySets.length === 0 ? (
-                    <div className="quiz-state">
-                        <h2>No study sets available.</h2>
-                        <button className="primary-btn" onClick={() => navigate("/sets")}>
-                            Create New Set
-                        </button>
-                    </div>
-                ) : (
-
-                  <div className="set-picker-list">
-    {studySets.map((set) => (
-        <div
-            key={set.id}
-            className="set-picker-card"
-            onClick={() => setChosenSetId(set.id)}
-            style={{ cursor: "pointer" }}
-        >
-            <div className="set-picker-copy">
-                <h3>{set.title}</h3>
-                <p>{set.description}</p>
-
-                <span className="set-picker-count">
-                    {set.cardCount} cards
-                </span>
-            </div>
-
-            <div className="set-card-actions">
-                <button
-                    className="secondary-btn"
-                    onClick={(e) => {
-                        e.stopPropagation(); //prevents opening quiz
-                        navigate(`/sets/${set.id}`);
-                    }}
-                >
-                    Edit
-                </button>
-
-                <button
-                    className="danger-btn"
-                    onClick={(e) => {
-                        e.stopPropagation(); //prevents opening quiz
-                        handleDeleteSet(set.id);
-                    }}
-                >
-                    Delete
-                </button>
-            </div>
-        </div>
-    ))}
-</div>
-                )}
-            </div>
-        );
+        return null;
     }
-
     //loading quiz
+
     if (loadingQuiz) {
         return (
             <div className="quiz-state">
@@ -300,38 +169,38 @@ function Quiz() {
             </div>
         );
     }
-
     //error screen
+
     if (error) {
         return (
             <div className="quiz-state">
                 <h2>{error}</h2>
                 <button
                     className="primary-btn"
-                    onClick={() => setChosenSetId("")}
+                    onClick={() => navigate("/sets")}
                 >
-                    Choose Another Set
+                    Back to Sets
                 </button>
             </div>
         );
     }
-
     //no questions fallback
+
     if (quizQuestions.length === 0) {
         return (
             <div className="quiz-state">
                 <h2>No quiz questions available.</h2>
                 <button
                     className="primary-btn"
-                    onClick={() => setChosenSetId("")}
+                    onClick={() => navigate("/sets")}
                 >
-                    Choose Another Set
+                    Back to Sets
                 </button>
             </div>
         );
     }
-
     //results screen
+
     if (quizComplete) {
         return (
             <div className="quiz-container results-screen">
@@ -347,7 +216,7 @@ function Quiz() {
                     </button>
                     <button
                         className="secondary-btn"
-                        onClick={() => setChosenSetId("")}
+                        onClick={() => navigate("/sets")}
                     >
                         Change Set
                     </button>
@@ -355,18 +224,17 @@ function Quiz() {
             </div>
         );
     }
-
     //current question + progress
+
     const currentQuestion = quizQuestions[currentIndex];
     const progressPercent = Math.round(((currentIndex + 1) / quizQuestions.length) * 100);
 
     return (
         <div className="quiz-container">
-
             <div className="quiz-topbar">
                 <button
                     className="secondary-btn"
-                    onClick={() => setChosenSetId("")}
+                    onClick={() => navigate("/flashcards")}
                 >
                     Change Set
                 </button>
@@ -377,21 +245,19 @@ function Quiz() {
                     <p>Choose the correct definition for each term.</p>
                 </div>
 
-                <button
-                    className="secondary-btn"
-                    onClick={() => navigate("/dashboard")}
-                >
-                    Home
-                </button>
+
             </div>
 
             <div className="progress-row">
                 <div className="progress-meta">
                     <span>Question {currentIndex + 1} of {quizQuestions.length}</span>
-                    <span>Score: {score}</span>
+                    <span>Score: {score}/{currentIndex + 1}</span>
                 </div>
                 <div className="progress-track">
-                    <div className="progress-fill" style={{ width: `${progressPercent}%` }} />
+                    <div
+                        className="progress-fill"
+                        style={{ width: `${progressPercent}%` }}
+                    />
                 </div>
             </div>
 
