@@ -61,34 +61,38 @@ a{
     justify-content: center;
 }
 
-.home-btn{
+.home-btn {
     padding: 12px 28px;
     border-radius: 999px;
-    border: 1px solid rgba(99, 120, 255, 0.4);
+    border: none;
+
+    background: linear-gradient(135deg, #4f6fff, #7c3aed);
+    color: white;
+
     font-size: 15px;
     font-weight: 600;
     cursor: pointer;
-    background: rgba(79, 111, 255, 0.22);
-    color: #a5b4fc;
-    transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+
+    box-shadow: 0 8px 20px rgba(79, 111, 255, 0.3);
+    transition: all 0.2s ease;
 }
 
-.home-btn:hover{
-    transform: scale(1.04);
-    background: rgba(79, 111, 255, 0.35);
-    border-color: rgba(99, 120, 255, 0.6);
+.home-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 12px 28px rgba(79, 111, 255, 0.4);
+}
+.home-btn.secondary {
+    background: rgba(16, 20, 44, 0.85);  /* solid dark instead of transparent */
+    border: 1px solid rgba(99, 120, 255, 0.25);
+
+    color: #cbd5f5;
 }
 
-.home-btn.secondary{
-    background: transparent;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    color: #7b8cad;
+.home-btn.secondary:hover {
+    background: rgba(16, 20, 44, 1);
+    border-color: rgba(99, 120, 255, 0.4);
+    color: #e2e8f5;
 }
-
-.home-btn.secondary:hover{
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.22);
-    color: #c7d0ed;
 }
 
 /*  LOGIN / SIGNUP  */
