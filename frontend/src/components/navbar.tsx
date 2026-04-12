@@ -1,4 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
+import "../css/navbar.css";
 
 function Navbar() {
     const navigate = useNavigate();
@@ -15,8 +16,9 @@ function Navbar() {
             <div className="nav-links">
                 <Link to="/dashboard">Dashboard</Link>
                 <Link to="/flashcards">Study Sets</Link>
-                <Link to="/quiz">Quiz</Link>
-                <button onClick={handleLogout}>Logout</button>
+                <button className="secondary-btn" onClick={handleLogout}>
+                    Logout
+                </button>
             </div>
         </nav>
     );
