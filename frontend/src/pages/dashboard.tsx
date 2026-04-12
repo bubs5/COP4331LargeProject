@@ -76,23 +76,28 @@ function Dashboard() {
                 ) : sets.length === 0 ? (
                     <p>No study sets yet.</p>
                 ) : (
-                    <div className="dashboard-sets-grid">
-                        {sets.slice(0, 3).map((set) => (
-                            <div
-                                key={set.id}
-                                className="study-set-preview"
-                                onClick={() => {
-                                    localStorage.setItem("lastSet", JSON.stringify(set));
-                                    navigate(`/sets/${set.id}`);
-                                }}
-                                style={{ cursor: "pointer" }}
-                            >
-                                <h3>{set.title}</h3>
-                                <p>{set.description}</p>
-                                <p>{set.cardCount} cards</p>
-                            </div>
-                        ))}
-                    </div>
+                    <div className="dashboard-sets-list">
+    {sets.slice(0, 3).map((set) => (
+        <div
+            key={set.id}
+            className="dashboard-set-row"
+            onClick={() => {
+                localStorage.setItem("lastSet", JSON.stringify(set));
+                navigate(`/sets/${set.id}`);
+            }}
+            style={{ cursor: "pointer" }}
+        >
+            <div className="dashboard-set-copy">
+                <h3>{set.title}</h3>
+                <p>{set.description}</p>
+            </div>
+
+            <span className="dashboard-set-count">
+                {set.cardCount} cards
+            </span>
+        </div>
+    ))}
+</div>
                 )}
             </div>
         </div>
