@@ -11,6 +11,10 @@ import Sets from "./pages/sets";
 import SetDetail from "./pages/SetDetail.tsx";
 import Flashcards from "./pages/flashcards";
 import Quiz from "./pages/quiz";
+import Rewards from "./pages/rewards";
+
+import { RewardsProvider } from "./context/RewardsContext";
+import PointsToast from "./components/PointsToast";
 
 function App() {
     const location = useLocation();
@@ -20,8 +24,8 @@ function App() {
     const showNavbar = !!user && !hideNavbarRoutes.includes(location.pathname);
 
     return (
-        <>
-            {showNavbar && <Navbar />}
+        <RewardsProvider>
+        {showNavbar && <Navbar />}
 
             <div className="container">
                 <Routes>
@@ -36,9 +40,11 @@ function App() {
                     <Route path="/sets/:setId" element={<SetDetail />} />
                     <Route path="/flashcards" element={<Flashcards />} />
                     <Route path="/quiz" element={<Quiz />} />
+                    <Route path="/rewards" element={<Rewards />} />
                 </Routes>
             </div>
-        </>
+            <PointsToast />
+        </RewardsProvider>
     );
 }
 

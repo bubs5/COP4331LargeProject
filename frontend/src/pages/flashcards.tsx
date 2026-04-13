@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useRewards } from "../context/RewardsContext";
 import '../css/flashcards.css';
 import {
     getCardsForSet,
@@ -24,7 +25,8 @@ function Flashcards() {
     const [knownCards, setKnownCards] = useState<Set<number>>(new Set()); //if the user knows a card
     const [apiLoading, setApiLoading] = useState(true); //true the data is being fetched from the API or not
     const [error, setError] = useState(""); //error messsage is something goes wrong
-
+    const { award } = useRewards();
+    const [sessionPointsAwarded, setSessionPointsAwarded] = useState(false);
     const setId = chosenSetId;
 
     //load all sets
@@ -116,6 +118,17 @@ function Flashcards() {
     }, [setId]);
 
 
+    // award points when session completes
+    useEffect(() => {
+        if (sessionComplete && !sessionPointsAwarded) {
+            setSessionPointsAwarded(true);
+            award("flashcard_session");
+            if (cards.length >= 5) {
+                award("cards_studied");
+            }
+        }
+    }, [sessionComplete, sessionPointsAwarded, award, cards.length]);
+
     //how far into each set we aare
     const progressPercent = useMemo(() => {
         if (cards.length === 0) return 0;
@@ -169,6 +182,7 @@ function Flashcards() {
         setShowDef(false);
         setKnownCards(new Set());
         setSessionComplete(false);
+        setSessionPointsAwarded(false);
     };
 
     //keyboard shortcuts
@@ -198,12 +212,12 @@ function Flashcards() {
 
             <div className="flashcards-state">
                 <div className="flashcards-actions">
-                   <button
-    className="primary-btn"
-    onClick={() => navigate('/sets')}
->
-    New Set
-</button>
+                    <button
+                        className="primary-btn"
+                        onClick={() => navigate('/sets')}
+                    >
+                        New Set
+                    </button>
                 </div>
 
                 <div className="flashcards-heading">
@@ -247,7 +261,7 @@ function Flashcards() {
     }
     //loading
     if (apiLoading) {
-        return <div className="flashcards-state">Loading flashcards...</div>;
+        return <div className="flashcards-state">Loading flashcards</div>;
     }
 
     //error
@@ -270,6 +284,9 @@ function Flashcards() {
                 <h1>{selectedSet?.title}</h1>
                 <p className="results-copy">
                     You know {knownCards.size} out of {cards.length} cards.
+                </p>
+                <p className="session-points-earned">
+                       +20 points earned!
                 </p>
 
                 <div className="results-actions">
@@ -301,29 +318,29 @@ function Flashcards() {
     return (
 
         <div className="flashcardContainer">
-           <div className="flashcards-topbar">
-    <button
-        className="secondary-btn"
-        onClick={() => {
-            setChosenSetId('');
-            setSelectedSet(null);
-            setCards([]);
-            setIndex(0);
-            setShowDef(false);
-            setSessionComplete(false);
-            setKnownCards(new Set());
-            setError('');
-        }}
-    >
-        Change Set
-    </button>
+            <div className="flashcards-topbar">
+                <button
+                    className="secondary-btn"
+                    onClick={() => {
+                        setChosenSetId('');
+                        setSelectedSet(null);
+                        setCards([]);
+                        setIndex(0);
+                        setShowDef(false);
+                        setSessionComplete(false);
+                        setKnownCards(new Set());
+                        setError('');
+                    }}
+                >
+                    Change Set
+                </button>
 
-    <div className="flashcards-title-block">
-        <p className="eyebrow">Flashcards</p>
-        <h1>{selectedSet?.title || 'Study Mode'}</h1>
-        <p>{selectedSet?.description}</p>
-    </div>
-</div>
+                <div className="flashcards-title-block">
+                    <p className="eyebrow">Flashcards</p>
+                    <h1>{selectedSet?.title || 'Study Mode'}</h1>
+                    <p>{selectedSet?.description}</p>
+                </div>
+            </div>
             {/*progress bar*/}
             <div className="progress-row">
                 <div className="progress-meta">

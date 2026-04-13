@@ -3,6 +3,8 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import "../css/quiz.css";
 import { getCardsForSet, getStudySetById } from "../services/setsService";
 import type { StudySet, Flashcard } from "../types";
+import { useRewards } from "../context/RewardsContext";
+
 //defines the structure of each quiz question
 type QuizQuestion = {
     id: number;
@@ -23,6 +25,7 @@ function shuffleArray<T>(array: T[]): T[] {
 function Quiz() {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
+    const { award } = useRewards();
 
     const chosenSetId = searchParams.get("setId") || "";
 
@@ -38,6 +41,7 @@ function Quiz() {
     const [showFeedback, setShowFeedback] = useState(false);
     const [score, setScore] = useState(0);
     const [quizComplete, setQuizComplete] = useState(false);
+    const [pointsAwarded, setPointsAwarded] = useState(false);
 
     //load all study sets when page loads
     useEffect(() => {
@@ -88,6 +92,7 @@ function Quiz() {
                 setShowFeedback(false);
                 setScore(0);
                 setQuizComplete(false);
+                setPointsAwarded(false);
                 //save last opened set
 
                 localStorage.setItem("lastSet", JSON.stringify(fetchedSet));
@@ -155,7 +160,22 @@ function Quiz() {
         setShowFeedback(false);
         setScore(0);
         setQuizComplete(false);
+        setPointsAwarded(false);
     };
+
+    //award points for quiz completion
+    useEffect(() =>{
+        if (quizComplete && !pointsAwarded){
+            setPointsAwarded(true);
+            const isPerfect = score === quizQuestions.length && quizQuestions.length > 0;
+            if (isPerfect){
+                award("quiz_perfect");
+            }
+            else{
+                award("quiz_complete");
+            }
+        }
+    }, [quizComplete, pointsAwarded, score, quizQuestions.length, award]);
 
     if (!chosenSetId) {
         return null;
@@ -202,10 +222,16 @@ function Quiz() {
     //results screen
 
     if (quizComplete) {
+        const isPerfect = score === quizQuestions.length;
         return (
             <div className="quiz-container results-screen">
                 <p className="eyebrow">Quiz Complete</p>
                 <h1>{selectedSet?.title || "Your Results"}</h1>
+                <div className="quiz-points-banner">
+                    {isPerfect
+                        ? "Perfect score! You earned 75 points!"
+                        : "Quiz complete! You earned 30 points!"}
+                </div>
                 <p className="results-copy">
                     You got {score} out of {quizQuestions.length} correct.
                 </p>

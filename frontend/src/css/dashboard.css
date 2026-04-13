@@ -8,7 +8,7 @@
     margin: 0 0 28px;
     text-align: center;
     font-size: clamp(2.2rem, 5vw, 3.4rem);
-    color: #e8eaf6;
+    color: var(--color-text, #e8eaf6);
     letter-spacing: -0.03em;
 }
 
@@ -17,23 +17,23 @@
     padding: 26px 28px;
     border-radius: 28px;
     background:
-        radial-gradient(ellipse at 50% 0%, rgba(79, 111, 255, 0.07) 0%, transparent 70%),
-        rgba(12, 16, 34, 0.88);
-    border: 1px solid rgba(99, 120, 255, 0.15);
+            radial-gradient(ellipse at 50% 0%, rgba(255, 255, 255, 0.03) 0%, transparent 70%),
+            color-mix(in srgb, var(--color-surface, #0c1022) 88%, transparent);
+    border: 1px solid var(--color-border, rgba(99, 120, 255, 0.15));
     box-shadow:
-        0 30px 70px rgba(0, 0, 20, 0.55),
-        inset 0 1px 0 rgba(255, 255, 255, 0.04);
+            0 30px 70px rgba(0, 0, 20, 0.55),
+            inset 0 1px 0 rgba(255, 255, 255, 0.04);
     backdrop-filter: blur(20px);
 }
 
 .dashboard-card h2 {
     margin: 0 0 18px;
-    color: #e8eaf6;
+    color: var(--color-text, #e8eaf6);
 }
 
 .dashboard-card h3 {
     margin: 0 0 6px;
-    color: #dde3f7;
+    color: var(--color-text, #dde3f7);
     font-size: 1.2rem;
     font-weight: 700;
 }
@@ -56,7 +56,7 @@
 .view-all {
     padding: 8px 16px;
     border-radius: 999px;
-    background: linear-gradient(135deg, #4f6fff, #7c3aed);
+    background: var(--color-gradient, linear-gradient(135deg, #4f6fff, #7c3aed));
     color: white;
     font-weight: 600;
     font-size: 0.9rem;
@@ -80,8 +80,8 @@
     width: 100%;
     padding: 18px 22px;
     border-radius: 18px;
-    border: 1px solid rgba(99, 120, 255, 0.14);
-    background: rgba(16, 20, 44, 0.7);
+    border: 1px solid var(--color-border, rgba(99, 120, 255, 0.14));
+    background: color-mix(in srgb, var(--color-card, #10142c) 78%, transparent);
     box-shadow: 0 8px 24px rgba(0, 0, 20, 0.35);
     backdrop-filter: blur(10px);
 
@@ -95,7 +95,7 @@
 
 .dashboard-set-row:hover {
     transform: translateY(-2px);
-    border-color: rgba(99, 120, 255, 0.32);
+    border-color: var(--color-primary, rgba(99, 120, 255, 0.32));
     box-shadow: 0 16px 40px rgba(0, 0, 30, 0.5);
 }
 
@@ -109,9 +109,9 @@
     white-space: nowrap;
     padding: 7px 14px;
     border-radius: 999px;
-    background: rgba(79, 111, 255, 0.15);
-    border: 1px solid rgba(79, 111, 255, 0.28);
-    color: #818cf8;
+    background: color-mix(in srgb, var(--color-primary, #4f6fff) 16%, transparent);
+    border: 1px solid color-mix(in srgb, var(--color-primary, #4f6fff) 28%, transparent);
+    color: var(--color-primary, #818cf8);
     font-weight: 700;
     font-size: 0.85rem;
 }

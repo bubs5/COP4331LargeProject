@@ -6,8 +6,8 @@
     padding: 16px 28px;
     margin-bottom: 20px;
 
-    background: rgba(12, 16, 34, 0.85);
-    border-bottom: 1px solid rgba(99, 120, 255, 0.15);
+    background: color-mix(in srgb, var(--color-surface, #0c1022) 88%, transparent);
+    border-bottom: 1px solid var(--color-border, rgba(99, 120, 255, 0.15));
 
     backdrop-filter: blur(12px);
 }
@@ -15,7 +15,7 @@
 /* Title */
 .navbar h2 {
     margin: 0;
-    color: #e8eaf6;
+    color: var(--color-text, #e8eaf6);
     font-size: 1.4rem;
     font-weight: 700;
 }
@@ -29,14 +29,14 @@
 
 /* Links */
 .nav-links a {
-    color: #cbd5f5;
+    color: var(--color-text-sub, #cbd5f5);
     text-decoration: none;
     font-weight: 500;
     transition: color 0.2s ease;
 }
 
 .nav-links a:hover {
-    color: #818cf8;
+    color: var(--color-primary, #818cf8);
 }
 
 /* Logout button */
@@ -46,9 +46,9 @@
     font-size: 0.9rem;
     cursor: pointer;
 
-    background: rgba(255, 255, 255, 0.08);
-    color: #e4e8f7;
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: color-mix(in srgb, var(--color-card, #0f1428) 85%, white 8%);
+    color: var(--color-text, #e4e8f7);
+    border: 1px solid var(--color-border, rgba(255, 255, 255, 0.12));
 
     transition: all 0.2s ease;
 }
@@ -64,7 +64,7 @@
     border-radius: 12px;
     font-size: 0.9rem;
 
-    background: linear-gradient(135deg, #4f6fff, #7c3aed);
+    background: var(--color-gradient, linear-gradient(135deg, #4f6fff, #7c3aed));
     color: white;
     border: none;
 
