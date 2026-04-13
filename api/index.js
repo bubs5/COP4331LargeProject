@@ -4,7 +4,7 @@ const { MongoClient } = require('mongodb');
 const bcrypt = require('bcrypt');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
-
+const createRewardsRouter = require('./routes/rewards');
 const app = express();
 app.use(express.json()); // Parses Json data
 app.use(cors()); // Prevent address conflicts
@@ -14,11 +14,16 @@ const uri = process.env.MONGODB_URI;
 const dbName = 'COP4331Cards';
 let db;
 let usersCollection;
+//rewards
+let rewardsCollection;
+
 
 MongoClient.connect(uri)
     .then(client => {
         db = client.db(dbName);
         usersCollection = db.collection('Users');
+        rewardsCollection = db.collection('Rewards');
+        app.use('/api/rewards', createRewardsRouter(rewardsCollection));
         console.log('Connected to the database');
         
         // Start the server
