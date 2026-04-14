@@ -242,7 +242,7 @@ function Quiz() {
                     </button>
                     <button
                         className="secondary-btn"
-                        onClick={() => navigate("/sets")}
+                        onClick={() => navigate("/flashcards")}
                     >
                         Change Set
                     </button>
@@ -266,9 +266,8 @@ function Quiz() {
                 </button>
 
                 <div className="quiz-title-block">
-                    <p className="eyebrow">Quiz Mode</p>
+                    <p className="eyebrow">Quiz </p>
                     <h1>{selectedSet?.title || "Test Yourself"}</h1>
-                    <p>Choose the correct definition for each term.</p>
                 </div>
 
 

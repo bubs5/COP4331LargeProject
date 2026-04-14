@@ -4,16 +4,25 @@
     margin: 0 auto;
     padding: 12px 0 60px;
 }
-
 .quiz-topbar 
 {
-    display: flex;
-    justify-content: space-between;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: start;
     gap: 20px;
-    align-items: flex-start;
     margin-bottom: 28px;
 }
 
+.quiz-topbar > button
+{
+    justify-self: start;
+}
+
+.quiz-title-block 
+{
+    grid-column: 2;
+    text-align: center;
+}
 
 .quiz-title-block h1 
 {
