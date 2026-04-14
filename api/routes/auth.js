@@ -14,7 +14,7 @@ exports.setApp = function (app, client) {
         }
 
         try {
-            const db = client.db('quizapp');
+            const db = client.db('COP4331Cards');
             const users = db.collection('Users');
 
             const existingUser = await users.findOne({
@@ -54,7 +54,7 @@ exports.setApp = function (app, client) {
         const { token } = req.params;
 
         try {
-            const db = client.db('quizapp');
+            const db = client.db('COP4331Cards');
             const users = db.collection('Users');
             const user = await users.findOne({ verifyToken: token });
 
@@ -84,7 +84,7 @@ exports.setApp = function (app, client) {
         }
 
         try {
-            const db = client.db('quizapp');
+            const db = client.db('COP4331Cards');
             const users = db.collection('Users');
             const user = await users.findOne({ login: login });
 
@@ -132,7 +132,7 @@ exports.setApp = function (app, client) {
         }
 
         try {
-            const db = client.db('quizapp');
+            const db = client.db('COP4331Cards');
             const users = db.collection('Users');
             const user = await users.findOne({ email: email });
 
@@ -167,7 +167,7 @@ exports.setApp = function (app, client) {
         }
 
         try {
-            const db = client.db('quizapp');
+            const db = client.db('COP4331Cards');
             const users = db.collection('Users');
 
             const user = await users.findOne({

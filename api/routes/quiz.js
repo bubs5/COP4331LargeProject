@@ -11,7 +11,7 @@ exports.setApp = function (app, client) {
         }
 
         try {
-            const db = client.db('quizapp');
+            const db = client.db('COP4331Cards');
             const set = await db.collection('Sets').findOne({ _id: new ObjectId(setId) });
 
             if (!set) {
@@ -65,7 +65,7 @@ exports.setApp = function (app, client) {
         }
 
         try {
-            const db = client.db('quizapp');
+            const db = client.db('COP4331Cards');
             const sessions = db.collection('QuizSessions');
             const session = await sessions.findOne({ _id: new ObjectId(sessionId) });
 
@@ -115,7 +115,7 @@ exports.setApp = function (app, client) {
         const { sessionId } = req.params;
 
         try {
-            const db = client.db('quizapp');
+            const db = client.db('COP4331Cards');
             const session = await db.collection('QuizSessions').findOne({
                 _id: new ObjectId(sessionId)
             });
@@ -147,7 +147,7 @@ exports.setApp = function (app, client) {
         const { userId } = req.params;
 
         try {
-            const db = client.db('quizapp');
+            const db = client.db('COP4331Cards');
             const sessions = await db.collection('QuizSessions')
                 .find({ userId, completed: true })
                 .sort({ completedAt: -1 })
