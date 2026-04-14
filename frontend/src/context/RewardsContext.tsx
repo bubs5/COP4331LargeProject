@@ -6,7 +6,7 @@ import{
     useCallback,
     type ReactNode,
 } from "react";
-import {
+import{
     loadRewards,
     awardPoints,
     unlockTheme,
@@ -14,7 +14,7 @@ import {
     applyTheme,
     REWARD_EVENTS,
 } from "../services/rewardsService";
-import type { RewardsState, RewardEventType, PointHistoryEntry } from "../types/rewards";
+import type{ RewardsState, RewardEventType, PointHistoryEntry } from "../types/rewards";
 
 interface PointToast{
     id: string;
@@ -25,51 +25,73 @@ interface PointToast{
 
 interface RewardsContextValue{
     rewards: RewardsState;
+    loading: boolean;
     toast: PointToast | null;
-    award: (type: RewardEventType, multiplier?: number) => PointHistoryEntry;
-    unlock: (themeId: string) => void;
-    activate: (themeId: string) => void;
+    award: (type: RewardEventType, multiplier?: number) => Promise<PointHistoryEntry>;
+    unlock: (themeId: string) => Promise<void>;
+    activate: (themeId: string) => Promise<void>;
     dismissToast: () => void;
 }
 
 const RewardsContext = createContext<RewardsContextValue | null>(null);
 
-export function RewardsProvider({ children }: { children: ReactNode }) {
-    const [rewards, setRewards] = useState<RewardsState>(loadRewards);
-    const [toast, setToast] = useState<PointToast | null>(null);
+const DEFAULT_STATE: RewardsState ={
+    totalPoints: 0,
+    lifetimePoints: 0,
+    activeThemeId: "default",
+    unlockedThemeIds: ["default"],
+    history: [],
+    streak: 0,
+    lastActivityDate: "",
+};
 
-    //apply theme on mount and whenever activeThemeId changes
+export function RewardsProvider({ children }:{ children: ReactNode }){
+    const [rewards, setRewards] = useState<RewardsState>(DEFAULT_STATE);
+    const [loading, setLoading] = useState(true);
+    const [toast, setToast]     = useState<PointToast | null>(null);
+
+    // load rewards on mount (works for both mock and API)
+    useEffect(() =>{
+        loadRewards()
+            .then((state) =>{
+                setRewards(state);
+                applyTheme(state.activeThemeId);
+            })
+            .catch((err) =>{
+                console.error("Failed to load rewards:", err);
+                applyTheme("default");
+            })
+            .finally(() => setLoading(false));
+    }, []);
+
+    // re-apply theme whenever it changes
     useEffect(() =>{
         applyTheme(rewards.activeThemeId);
     }, [rewards.activeThemeId]);
 
     const award = useCallback(
-        (type: RewardEventType, multiplier = 1): PointHistoryEntry => {
-            const { state, entry } = awardPoints(rewards, type, multiplier);
+        async (type: RewardEventType, multiplier = 1): Promise<PointHistoryEntry> =>{
+            const{ state, entry } = await awardPoints(rewards, type, multiplier);
             setRewards(state);
-
-            //show floating toast
-
             const event = REWARD_EVENTS[type];
             setToast({ id: entry.id, points: entry.points, label: entry.label, icon: event.icon });
             setTimeout(() => setToast(null), 2800);
-
             return entry;
         },
         [rewards]
     );
 
     const unlock = useCallback(
-        (themeId: string) => {
-            const updated = unlockTheme(rewards, themeId);
+        async (themeId: string) =>{
+            const updated = await unlockTheme(rewards, themeId);
             setRewards(updated);
         },
         [rewards]
     );
 
     const activate = useCallback(
-        (themeId: string) => {
-            const updated = setActiveTheme(rewards, themeId);
+        async (themeId: string) =>{
+            const updated = await setActiveTheme(rewards, themeId);
             setRewards(updated);
             applyTheme(themeId);
         },
@@ -79,8 +101,8 @@ export function RewardsProvider({ children }: { children: ReactNode }) {
     const dismissToast = useCallback(() => setToast(null), []);
 
     return (
-        <RewardsContext.Provider value={{ rewards, toast, award, unlock, activate, dismissToast }}>
-            {children}
+        <RewardsContext.Provider value={{ rewards, loading, toast, award, unlock, activate, dismissToast }}>
+           {children}
         </RewardsContext.Provider>
     );
 }

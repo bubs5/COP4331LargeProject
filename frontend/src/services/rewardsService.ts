@@ -5,7 +5,12 @@ import type {
     PointHistoryEntry,
 } from "../types/rewards";
 
-//Point values per event
+// API OR MOCK
+const USE_MOCK_DATA = true; // set to false to switch to the real API
+
+const urlBase = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+
+// point values
 export const REWARD_EVENTS: Record<RewardEventType, { points: number; label: string; icon: string }> = {
     daily_login:       { points: 10,  label: "Daily Login",          icon: "☀️" },
     flashcard_session: { points: 20,  label: "Flashcard Session",    icon: "🃏" },
@@ -128,7 +133,7 @@ export const THEMES: Theme[] = [
     },
 ];
 
-// storage key
+// localStorage mock helpers
 const STORAGE_KEY = "rewards_state";
 
 function defaultState(): RewardsState {
@@ -143,97 +148,164 @@ function defaultState(): RewardsState {
     };
 }
 
-export function loadRewards(): RewardsState{
-    try{
+function loadFromStorage(): RewardsState {
+    try {
         const raw = localStorage.getItem(STORAGE_KEY);
         if (!raw) return defaultState();
         return { ...defaultState(), ...JSON.parse(raw) };
-    }
-    catch{
+    } catch {
         return defaultState();
     }
 }
 
-export function saveRewards(state: RewardsState): void{
+function saveToStorage(state: RewardsState): void {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
 
-/** Award points for an event. Returns updated state and entry added. */
-export function awardPoints(
+// API helpers
+function getUserId(): string {
+    const raw = localStorage.getItem("user_data");
+    if (!raw) throw new Error("Not logged in");
+    return JSON.parse(raw).id as string;
+}
+
+function normalizeDoc(doc: any): RewardsState {
+    return {
+        totalPoints:      doc.totalPoints      ?? 0,
+        lifetimePoints:   doc.lifetimePoints   ?? 0,
+        activeThemeId:    doc.activeThemeId    ?? "default",
+        unlockedThemeIds: doc.unlockedThemeIds ?? ["default"],
+        history: (doc.history ?? []).map((e: any): PointHistoryEntry => ({
+            id:     e._id ?? e.id ?? String(Date.now()),
+            type:   e.type,
+            points: e.points,
+            label:  e.label,
+            date:   e.date,
+        })),
+        streak:           doc.streak           ?? 0,
+        lastActivityDate: doc.lastActivityDate ?? "",
+    };
+}
+
+//api or mock
+
+export async function loadRewards(): Promise<RewardsState> {
+    if (USE_MOCK_DATA) return loadFromStorage();
+
+    const res  = await fetch(`${urlBase}/rewards/${getUserId()}`);
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error ?? "Failed to load rewards");
+    return normalizeDoc(data.rewards);
+}
+
+export async function awardPoints(
     state: RewardsState,
     eventType: RewardEventType,
     multiplier = 1
-): { state: RewardsState; entry: PointHistoryEntry } {
-    const event = REWARD_EVENTS[eventType];
-    const earned = Math.round(event.points * multiplier);
+): Promise<{ state: RewardsState; entry: PointHistoryEntry }> {
+    if (USE_MOCK_DATA) {
+        const event     = REWARD_EVENTS[eventType];
+        const earned    = Math.round(event.points * multiplier);
+        const today     = new Date().toISOString().split("T")[0];
+        const yesterday = new Date(Date.now() - 86_400_000).toISOString().split("T")[0];
 
-    const today = new Date().toISOString().split("T")[0];
+        let newStreak = state.streak;
+        if (state.lastActivityDate === yesterday) newStreak += 1;
+        else if (state.lastActivityDate !== today) newStreak = 1;
 
-    //streak logic so if last activity was yesterday add to streak
-    let newStreak = state.streak;
-    const yesterday = new Date(Date.now() - 86_400_000).toISOString().split("T")[0];
-    if (state.lastActivityDate === yesterday){
-        newStreak += 1;
+        const entry: PointHistoryEntry = {
+            id:     `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+            type:   eventType,
+            points: earned,
+            label:  event.label,
+            date:   new Date().toISOString(),
+        };
+
+        const updated: RewardsState = {
+            ...state,
+            totalPoints:      state.totalPoints + earned,
+            lifetimePoints:   state.lifetimePoints + earned,
+            history:          [entry, ...state.history].slice(0, 50),
+            streak:           newStreak,
+            lastActivityDate: today,
+        };
+        saveToStorage(updated);
+        return { state: updated, entry };
     }
-    else if (state.lastActivityDate !== today){
-        newStreak = 1;
-    }
+
+    const res  = await fetch(`${urlBase}/rewards/${getUserId()}/award`, {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ eventType, multiplier }),
+    });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error ?? "Failed to award points");
 
     const entry: PointHistoryEntry = {
-        id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-        type: eventType,
-        points: earned,
-        label: event.label,
-        date: new Date().toISOString(),
+        id:     data.entry._id ?? data.entry.id ?? String(Date.now()),
+        type:   data.entry.type,
+        points: data.entry.points,
+        label:  data.entry.label,
+        date:   data.entry.date,
     };
-
-    const updated: RewardsState = {
-        ...state,
-        totalPoints: state.totalPoints + earned,
-        lifetimePoints: state.lifetimePoints + earned,
-        history: [entry, ...state.history].slice(0, 50), // keep last 50
-        streak: newStreak,
-        lastActivityDate: today,
-    };
-
-    saveRewards(updated);
-    return { state: updated, entry };
+    return { state: normalizeDoc(data.rewards), entry };
 }
 
-/** Spend points to unlock a theme. Returns updated state or throws if not enough. */
-export function unlockTheme(
+export async function unlockTheme(
     state: RewardsState,
     themeId: string
-): RewardsState {
-    const theme = THEMES.find((t) => t.id === themeId);
-    if (!theme) throw new Error("Theme not found");
-    if (state.unlockedThemeIds.includes(themeId)) throw new Error("Already unlocked");
-    if (state.totalPoints < theme.cost) throw new Error("Not enough points");
+): Promise<RewardsState> {
+    if (USE_MOCK_DATA) {
+        const theme = THEMES.find((t) => t.id === themeId);
+        if (!theme)                                   throw new Error("Theme not found");
+        if (state.unlockedThemeIds.includes(themeId)) throw new Error("Already unlocked");
+        if (state.totalPoints < theme.cost)           throw new Error("Not enough points");
 
-    const updated: RewardsState = {
-        ...state,
-        totalPoints: state.totalPoints - theme.cost,
-        unlockedThemeIds: [...state.unlockedThemeIds, themeId],
-    };
-    saveRewards(updated);
-    return updated;
+        const updated: RewardsState = {
+            ...state,
+            totalPoints:      state.totalPoints - theme.cost,
+            unlockedThemeIds: [...state.unlockedThemeIds, themeId],
+        };
+        saveToStorage(updated);
+        return updated;
+    }
+
+    const res  = await fetch(`${urlBase}/rewards/${getUserId()}/unlock`, {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ themeId }),
+    });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error ?? "Could not unlock theme");
+    return normalizeDoc(data.rewards);
 }
 
-/** Set to active theme. */
-export function setActiveTheme(
+export async function setActiveTheme(
     state: RewardsState,
     themeId: string
-): RewardsState{
-    if (!state.unlockedThemeIds.includes(themeId)) throw new Error("Theme not unlocked");
-    const updated = { ...state, activeThemeId: themeId };
-    saveRewards(updated);
-    return updated;
+): Promise<RewardsState> {
+    if (USE_MOCK_DATA) {
+        if (!state.unlockedThemeIds.includes(themeId)) throw new Error("Theme not unlocked");
+        const updated = { ...state, activeThemeId: themeId };
+        saveToStorage(updated);
+        return updated;
+    }
+
+    const res  = await fetch(`${urlBase}/rewards/${getUserId()}/activate`, {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ themeId }),
+    });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error ?? "Could not activate theme");
+    return normalizeDoc(data.rewards);
 }
 
-/** Apply a theme's CSS variables to :root */
-export function applyTheme(themeId: string): void{
+// user-side helpers
+
+export function applyTheme(themeId: string): void {
     const theme = THEMES.find((t) => t.id === themeId) ?? THEMES[0];
-    const root = document.documentElement;
+    const root  = document.documentElement;
     root.style.setProperty("--color-bg",       theme.colors.bg);
     root.style.setProperty("--color-surface",  theme.colors.surface);
     root.style.setProperty("--color-card",     theme.colors.card);
@@ -245,7 +317,6 @@ export function applyTheme(themeId: string): void{
     root.style.setProperty("--color-gradient", theme.colors.gradient);
 }
 
-/** Get a theme object by id */
-export function getThemeById(id: string): Theme{
+export function getThemeById(id: string): Theme {
     return THEMES.find((t) => t.id === id) ?? THEMES[0];
 }

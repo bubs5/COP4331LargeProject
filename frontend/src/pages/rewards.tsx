@@ -11,11 +11,11 @@ export default function Rewards(){
     const [storeError, setStoreError] = useState("");
     const [storeSuccess, setStoreSuccess] = useState("");
 
-    function handleUnlock(themeId: string){
+    async function handleUnlock(themeId: string){
         setStoreError("");
         setStoreSuccess("");
         try{
-            unlock(themeId);
+            await unlock(themeId);
             setStoreSuccess("Theme unlocked! Click Activate to use it.");
         }
         catch (e: any){
@@ -23,11 +23,16 @@ export default function Rewards(){
         }
     }
 
-    function handleActivate(themeId: string) {
+    async function handleActivate(themeId: string) {
         setStoreError("");
         setStoreSuccess("");
-        activate(themeId);
-        setStoreSuccess("Theme activated!");
+        try {
+            await activate(themeId);
+            setStoreSuccess("Theme activated!");
+        }
+        catch (e: any) {
+            setStoreError(e.message || "Could not activate theme.");
+        }
     }
 
     // XP bar every 500 points = 1 level
@@ -37,7 +42,6 @@ export default function Rewards(){
 
     return (
         <div className="rewards-page">
-            {/*Hero Header*/}
             <div className="rewards-header">
                 <div className="rewards-header-left">
                     <p className="rewards-eyebrow">Your Rewards</p>
