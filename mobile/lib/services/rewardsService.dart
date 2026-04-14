@@ -220,7 +220,7 @@ class RewardsService {
       }
 
       final entry = PointHistoryEntry(
-        id: '${DateTime.now().millisecondsSinceEpoch}-${now.microsecondsSinceEpoch}',
+        id: _generateEntryId(now, state, eventType),
         type: eventType,
         points: earned,
         label: event.label,
@@ -359,5 +359,13 @@ class RewardsService {
       throw Exception('Not logged in');
     }
     return id.toString();
+  }
+
+  String _generateEntryId(
+    DateTime now,
+    RewardsState state,
+    RewardEventType eventType,
+  ) {
+    return '${now.microsecondsSinceEpoch}-${eventType.value}-${now.millisecondsSinceEpoch ^ state.totalPoints}';
   }
 }

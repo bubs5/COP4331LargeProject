@@ -30,6 +30,7 @@ class RewardsProvider extends ChangeNotifier {
   bool _loading = true;
   PointToastData? _toast;
   Timer? _toastTimer;
+  bool _isDisposed = false;
 
   RewardsState get rewards => _rewards;
   bool get loading => _loading;
@@ -66,6 +67,7 @@ class RewardsProvider extends ChangeNotifier {
 
     _toastTimer?.cancel();
     _toastTimer = Timer(const Duration(milliseconds: 2800), () {
+      if (_isDisposed) return;
       _toast = null;
       notifyListeners();
     });
@@ -92,6 +94,7 @@ class RewardsProvider extends ChangeNotifier {
 
   @override
   void dispose() {
+    _isDisposed = true;
     _toastTimer?.cancel();
     super.dispose();
   }

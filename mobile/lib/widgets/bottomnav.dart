@@ -49,8 +49,8 @@ class BottomNav extends StatelessWidget{
   Widget build(BuildContext context){
     final location = GoRouterState.of(context).uri.toString();
     final currentIndex = _getCurrentIndex(location);
-    final rewards = RewardsScope.of(context);
-    final theme = rewards.activeTheme;
+    final rewardsProvider = RewardsScope.of(context);
+    final theme = rewardsProvider.activeTheme;
 
     return Scaffold(
       body: child,
@@ -124,7 +124,7 @@ class BottomNav extends StatelessWidget{
                           ),
                         ),
                         child: Text(
-                          rewards.rewards.totalPoints.toString(),
+                          rewardsProvider.rewards.totalPoints.toString(),
                           style: TextStyle(
                             color: theme.colors.primaryColor,
                             fontSize: 9,
@@ -138,7 +138,7 @@ class BottomNav extends StatelessWidget{
                 selectedIcon: const Icon(Icons.emoji_events_rounded),
                 label: 'Rewards',
               ),
-              const NavigationDestination(
+              NavigationDestination(
                 icon: Icon(Icons.logout_rounded, color: AppColors.error),
                 label: 'Logout',
               ),

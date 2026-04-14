@@ -77,6 +77,7 @@ class _DashboardScreenState extends State<DashboardScreen>{
 
     _dailyLoginAwardChecked = true;
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
       final today = isoDateOnly(DateTime.now());
       if (rewards.rewards.lastActivityDate != today) {
         await rewards.award(RewardEventType.dailyLogin);

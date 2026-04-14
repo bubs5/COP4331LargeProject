@@ -13,7 +13,7 @@ class _PointsToastState extends State<PointsToast>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
   late final Animation<double> _opacity;
-  late final Animation<double> _offset;
+  late final Animation<double> _verticalOffset;
   late final Animation<double> _scale;
   String? _activeId;
 
@@ -31,7 +31,7 @@ class _PointsToastState extends State<PointsToast>
       reverseCurve: Curves.easeIn,
     );
 
-    _offset = Tween<double>(begin: 16, end: 0).animate(
+    _verticalOffset = Tween<double>(begin: 16, end: 0).animate(
       CurvedAnimation(
         parent: _controller,
         curve: const Cubic(0.34, 1.56, 0.64, 1),
@@ -92,7 +92,7 @@ class _PointsToastState extends State<PointsToast>
             child: Opacity(
               opacity: _opacity.value,
               child: Transform.translate(
-                offset: Offset(0, _offset.value),
+                offset: Offset(0, _verticalOffset.value),
                 child: Transform.scale(
                   scale: _scale.value,
                   child: GestureDetector(

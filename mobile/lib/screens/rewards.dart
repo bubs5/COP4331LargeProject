@@ -13,6 +13,7 @@ class RewardsScreen extends StatefulWidget {
 }
 
 class _RewardsScreenState extends State<RewardsScreen> {
+  static const int _pointsPerLevel = 500;
   _RewardsTab _tab = _RewardsTab.store;
   String _error = '';
   String _success = '';
@@ -23,9 +24,9 @@ class _RewardsScreenState extends State<RewardsScreen> {
     final rewards = provider.rewards;
     final theme = provider.activeTheme;
 
-    final level = (rewards.lifetimePoints / 500).floor() + 1;
-    final progress = (rewards.lifetimePoints % 500) / 500;
-    final pointsToNext = 500 - (rewards.lifetimePoints % 500);
+    final level = (rewards.lifetimePoints / _pointsPerLevel).floor() + 1;
+    final progress = (rewards.lifetimePoints % _pointsPerLevel) / _pointsPerLevel;
+    final pointsToNext = _pointsPerLevel - (rewards.lifetimePoints % _pointsPerLevel);
 
     return Scaffold(
       backgroundColor: theme.colors.bgColor,
@@ -466,6 +467,8 @@ class _RewardsScreenState extends State<RewardsScreen> {
 
   Widget _buildEarn(RewardsProvider provider) {
     final theme = provider.activeTheme;
+    final perfectQuizPoints =
+        provider.rewardEvents[RewardEventType.quizPerfect]?.points ?? 75;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -533,14 +536,17 @@ class _RewardsScreenState extends State<RewardsScreen> {
                 height: 1.5,
               ),
               children: [
-                const TextSpan(text: '💡  Keep your daily study streak going... '),
+                const TextSpan(
+                  text: '💡  Keep your daily study streak going. A perfect quiz score gives ',
+                ),
                 TextSpan(
-                  text: '+75 pts',
+                  text: '+$perfectQuizPoints pts',
                   style: TextStyle(
                     color: theme.colors.primaryColor,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
+                const TextSpan(text: ' instead of the usual 30!'),
               ],
             ),
           ),

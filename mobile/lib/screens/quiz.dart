@@ -6,6 +6,7 @@ import '../models/flashcard.dart';
 import '../models/rewards.dart';
 import '../models/studyset.dart';
 import '../services/rewardsProvider.dart';
+import '../services/rewardsService.dart';
 import '../services/setsService.dart';
 import '../widgets/appButton.dart';
 
@@ -132,11 +133,13 @@ class _QuizScreenState extends State<QuizScreen>{
     final rewards = RewardsScope.of(context);
     final isPerfect = _score == _questions.length && _questions.isNotEmpty;
     if (isPerfect) {
+      final points = RewardsService.rewardEvents[RewardEventType.quizPerfect]!.points;
       await rewards.award(RewardEventType.quizPerfect);
-      _pointsBanner = 'Perfect score! You earned 75 points!';
+      _pointsBanner = 'Perfect score! You earned $points points!';
     } else {
+      final points = RewardsService.rewardEvents[RewardEventType.quizComplete]!.points;
       await rewards.award(RewardEventType.quizComplete);
-      _pointsBanner = 'Quiz complete! You earned 30 points!';
+      _pointsBanner = 'Quiz complete! You earned $points points!';
     }
     if (mounted) {
       setState(() {});

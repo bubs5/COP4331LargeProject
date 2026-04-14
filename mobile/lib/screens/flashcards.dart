@@ -6,6 +6,7 @@ import '../models/flashcard.dart';
 import '../models/rewards.dart';
 import '../models/studyset.dart';
 import '../services/rewardsProvider.dart';
+import '../services/rewardsService.dart';
 import '../services/setsService.dart';
 
 class FlashcardsScreen extends StatefulWidget{
@@ -28,6 +29,7 @@ class _FlashcardsScreenState extends State<FlashcardsScreen>
   String _error     = '';
   bool _sessionComplete = false;
   bool _sessionPointsAwarded = false;
+  int _sessionPointsEarned = 0;
 
   late AnimationController _animCtrl;
   late Animation<double> _flipAnim;
@@ -67,6 +69,7 @@ class _FlashcardsScreenState extends State<FlashcardsScreen>
         _cards    = results[1] as List<Flashcard>;
         _sessionComplete = false;
         _sessionPointsAwarded = false;
+        _sessionPointsEarned = 0;
         _isLoading = false;
       });
     }
@@ -85,11 +88,10 @@ class _FlashcardsScreenState extends State<FlashcardsScreen>
     if (_currentIndex < _cards.length - 1){
       _animCtrl.reset();
       setState((){ _currentIndex++; _isFlipped = false; });
-      return;
+    } else {
+      setState(() => _sessionComplete = true);
+      _awardCompletionPoints();
     }
-
-    setState(() => _sessionComplete = true);
-    _awardCompletionPoints();
   }
 
   void _prevCard(){
@@ -102,15 +104,21 @@ class _FlashcardsScreenState extends State<FlashcardsScreen>
   Future<void> _awardCompletionPoints() async {
     if (_sessionPointsAwarded) return;
     _sessionPointsAwarded = true;
+    int pointsEarned = RewardsService
+        .rewardEvents[RewardEventType.flashcardSession]!
+        .points;
 
     final rewards = RewardsScope.of(context);
     await rewards.award(RewardEventType.flashcardSession);
     if (_cards.length >= 5) {
       await rewards.award(RewardEventType.cardsStudied);
+      pointsEarned += RewardsService.rewardEvents[RewardEventType.cardsStudied]!.points;
     }
 
     if (!mounted) return;
-    setState(() {});
+    setState(() {
+      _sessionPointsEarned = pointsEarned;
+    });
   }
 
   void _restartSession() {
@@ -120,6 +128,7 @@ class _FlashcardsScreenState extends State<FlashcardsScreen>
       _isFlipped = false;
       _sessionComplete = false;
       _sessionPointsAwarded = false;
+      _sessionPointsEarned = 0;
     });
   }
 
@@ -189,9 +198,9 @@ class _FlashcardsScreenState extends State<FlashcardsScreen>
               ),
             ),
             const SizedBox(height: 12),
-            const Text(
-              '+20 points earned!',
-              style: TextStyle(
+            Text(
+              '+$_sessionPointsEarned points earned!',
+              style: const TextStyle(
                 color: AppColors.success,
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
