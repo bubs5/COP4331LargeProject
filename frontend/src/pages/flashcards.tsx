@@ -338,7 +338,6 @@ function Flashcards() {
                 <div className="flashcards-title-block">
                     <p className="eyebrow">Flashcards</p>
                     <h1>{selectedSet?.title || 'Study Mode'}</h1>
-                    <p>{selectedSet?.description}</p>
                 </div>
             </div>
             {/*progress bar*/}
