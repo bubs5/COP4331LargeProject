@@ -1,0 +1,244 @@
+html,
+body,
+body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+}
+* {
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
+}
+
+a {
+    text-decoration: none;
+}
+
+/*  HOME PAGE  */
+
+
+.home-container {
+    height: 100vh;
+    width: 100%;
+    background-color: #0f172a;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.home-content {
+    text-align: center;
+    color: white;
+    max-width: 600px;
+    padding: 20px;
+}
+
+.home-title {
+    font-size: 3rem;
+    margin-bottom: 20px;
+    text-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+}
+
+.home-description {
+    font-size: 1.2rem;
+    margin-bottom: 30px;
+    opacity: 0.9;
+}
+
+/* Buttons */
+
+.home-buttons {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+}
+
+.home-btn {
+    padding: 12px 24px;
+    border-radius: 20px;
+    border: none;
+    font-size: 16px;
+    cursor: pointer;
+
+    background-color: #ffffff;
+    color: #0f172a;
+
+    transition: 0.2s ease;
+}
+
+.home-btn:hover {
+    transform: scale(1.05);
+}
+
+.home-btn.secondary {
+    background-color: transparent;
+    border: 2px solid white;
+    color: white;
+}
+
+
+/*  LOGIN / SIGNUP  */
+
+.auth-page {
+    min-height: 100vh;
+    width: 100%;
+    background-color: #0f172a;
+}
+
+.overlay {
+    min-height: 100vh;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.loginbox {
+    width: min(380px, 92vw);
+    padding: 42px 34px 34px;
+    background: rgba(43, 47, 93, 0.55);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-radius: 46px;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
+    color: white;
+    box-shadow: 0 22px 55px rgba(0, 0, 0, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.formTitle {
+    font-size: 28px;
+    letter-spacing: 0.5px;
+    text-shadow: 0 8px 22px rgba(0, 0, 0, 0.35);
+}
+
+.form {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.backBtn {
+    position: absolute;
+    top: 18px;
+    left: 18px;
+    width: 44px;
+    height: 44px;
+    border: none;
+    background: rgba(255, 255, 255, 0.12);
+    border-radius: 50%;
+    color: white;
+    font-size: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.backBtn:hover {
+    transform: translateY(-1px) scale(1.05);
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.labelText {
+    font-size: 13px;
+    opacity: 0.9;
+}
+
+.loginfield {
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    outline: none;
+    background: rgba(0, 0, 0, 0.22);
+    color: white;
+    font-size: 15px;
+}
+
+.loginfield::placeholder {
+    color: rgba(255, 255, 255, 0.65);
+}
+
+.loginfield:focus {
+    border-color: rgba(255, 255, 255, 0.45);
+    box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.1);
+}
+
+.btn {
+    width: 100%;
+    padding: 12px;
+    border-radius: 18px;
+    border: none;
+    font-size: 16px;
+    cursor: pointer;
+    transition: transform 0.2s ease, opacity 0.2s ease, filter 0.2s ease;
+}
+
+.primaryBtn {
+    background: rgba(255, 255, 255, 0.92);
+    color: #2b2b2b;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.02);
+}
+
+.helperText {
+    text-align: center;
+    font-size: 14px;
+    opacity: 0.95;
+}
+
+.linkBtn {
+    color: #08eaf3;
+    font-weight: bold;
+    text-decoration: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.45);
+    padding-bottom: 2px;
+}
+.forgotText {
+    text-align: right;
+    font-size: 13px;
+    margin-top: -5px;
+    margin-bottom: 5px;
+}
+
+.linkBtn:hover {
+    border-bottom-color: rgba(255, 255, 255, 0.9);
+}
+
+.status {
+    min-height: 18px;
+    font-size: 14px;
+    text-align: center;
+    opacity: 0.95;
+}
+
+/*  MOBILE  */
+
+
+@media (max-width: 600px) {
+    .home-title {
+        font-size: 2.2rem;
+    }
+
+    .home-description {
+        font-size: 1rem;
+    }
+}

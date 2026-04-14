@@ -1,0 +1,184 @@
+
+
+/*  Outer page wrapper */
+.sets-page {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 20px 0 80px;
+}
+
+
+
+/*  Header block*/
+.sets-header {
+    margin-bottom: 28px;
+}
+
+.sets-header h1 {
+    margin: 6px 0;
+    font-size: 2.4rem;
+    color: #e2e8f5;
+    letter-spacing: -0.03em;
+    font-weight: 800;
+}
+
+.sets-header p {
+    margin: 0;
+    color: #7b8cad;
+}
+
+
+.sets-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 16px;
+}
+
+
+.set-card {
+    background:
+            radial-gradient(ellipse at 20% 10%, rgba(79, 111, 255, 0.08) 0%, transparent 55%),
+            rgba(14, 18, 38, 0.85);
+    border-radius: 22px;
+    border: 1px solid rgba(99, 120, 255, 0.14);
+    padding: 20px;
+    cursor: pointer;
+    box-shadow:
+            0 16px 40px rgba(0, 0, 20, 0.45),
+            inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    backdrop-filter: blur(16px);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+
+.set-card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(99, 120, 255, 0.32);
+    box-shadow:
+            0 28px 60px rgba(0, 0, 30, 0.58),
+            inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+
+
+/* title/description  */
+.set-card-top h3 {
+    margin: 0 0 6px;
+    color: #dde3f7;
+    font-weight: 600;
+    font-size: 1.05rem;
+    letter-spacing: -0.01em;
+}
+
+.set-card-top p {
+    margin: 0;
+    color: #5f708a;
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+/*  Card count*/
+.card-badge {
+    margin-top: 12px;
+    display: inline-block;
+    padding: 5px 12px;
+    border-radius: 999px;
+    background: rgba(79, 111, 255, 0.14);
+    border: 1px solid rgba(79, 111, 255, 0.28);
+    color: #818cf8;
+    font-weight: 700;
+    font-size: 0.78rem;
+    letter-spacing: 0.04em;
+}
+
+/*open/delete*/
+.set-card-actions {
+    margin-top: 16px;
+    display: flex;
+    gap: 10px;
+}
+
+/* creste new*/
+.create-set-section {
+    margin-top: 48px;
+    padding: 28px;
+    border-radius: 24px;
+    background:
+            radial-gradient(ellipse at 80% 0%, rgba(167, 139, 250, 0.06) 0%, transparent 55%),
+            rgba(12, 16, 34, 0.82);
+    border: 1px solid rgba(99, 120, 255, 0.14);
+    box-shadow:
+            0 24px 56px rgba(0, 0, 20, 0.5),
+            inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    backdrop-filter: blur(16px);
+}
+
+/* Section heading*/
+.create-set-section h2 {
+    margin: 0 0 16px;
+    color: #dde3f7;
+    font-size: 1.2rem;
+    letter-spacing: -0.01em;
+}
+
+/* Stacked form layout */
+.set-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* Label text*/
+.set-form label {
+    color: #8a97bb;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+}
+
+/* Dark glass inputs */
+.set-form input,
+.set-form textarea {
+    border-radius: 12px;
+    border: 1px solid rgba(99, 120, 255, 0.18);
+    background: rgba(8, 11, 28, 0.7);
+    padding: 12px 14px;
+    font-size: 0.95rem;
+    color: #dde3f7;
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.set-form input::placeholder,
+.set-form textarea::placeholder {
+    color: #3c4a68;
+}
+
+/* Focus ring */
+.set-form input:focus,
+.set-form textarea:focus {
+    border-color: rgba(99, 120, 255, 0.45);
+    box-shadow: 0 0 0 3px rgba(79, 111, 255, 0.1);
+}
+
+
+.set-form textarea {
+    min-height: 86px;
+    resize: vertical;
+}
+
+/* Shown when no sets exist yet  */
+.empty-card {
+    text-align: center;
+    padding: 40px 30px;
+    border-radius: 20px;
+    background: rgba(16, 20, 44, 0.55);
+    border: 1px dashed rgba(99, 120, 255, 0.15);
+    color: #4a5878;
+}
+
+.empty-card h2 {
+    color: #7b8cad;
+    margin: 0 0 8px;
+}
