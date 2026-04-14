@@ -1,41 +1,57 @@
 const express = require('express');
 const router = express.Router();
 const Card = require('../models/Card');
+const jwt = require('jsonwebtoken');
 
+// Helper: extract userId from JWT token if present
+function getUserId(req) {
+    try {
+        const authHeader = req.headers.authorization;
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+            const token = authHeader.split(' ')[1];
+            const decoded = jwt.verify(token, process.env.JWT_SECRET);
+            return decoded.userId || decoded.id || 'unknown';
+        }
+    } catch (err) {
+        // Token invalid or missing — fall through
+    }
+    return 'unknown';
+}
 
-//Get sets
+// GET /api/sets/:setId/cards
+// Returns all cards for a set, wrapped in { flashcards: [...] }
 router.get('/sets/:setId/cards', async (req, res) => {
     try {
         const cards = await Card.find({ setId: req.params.setId });
-        res.json(cards);
+        res.json({ flashcards: cards });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
 
-//Post sets
+// POST /api/sets/:setId/cards
+// Creates a new card, returns { flashcard: {...} }
 router.post('/sets/:setId/cards', async (req, res) => {
     try {
         const { term, definition } = req.body;
+        const userId = getUserId(req);
 
-        // Replace later with real auth
-        const userId = "mockUser123";
         const newCard = new Card({
             term,
             definition,
             setId: req.params.setId,
-            userId
+            userId,
         });
 
         await newCard.save();
-        res.status(201).json(newCard);
-
+        res.status(201).json({ flashcard: newCard });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
 
-//Put cards
+// PUT /api/cards/:cardId
+// Updates a card, returns { flashcard: {...} }
 router.put('/cards/:cardId', async (req, res) => {
     try {
         const { term, definition } = req.body;
@@ -45,18 +61,28 @@ router.put('/cards/:cardId', async (req, res) => {
             { term, definition },
             { new: true }
         );
-        res.json(updatedCard);
+
+        if (!updatedCard) {
+            return res.status(404).json({ error: 'Card not found.' });
+        }
+
+        res.json({ flashcard: updatedCard });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
 
-//Delete cards
+// DELETE /api/cards/:cardId
+// Deletes a single card
 router.delete('/cards/:cardId', async (req, res) => {
     try {
-        await Card.findByIdAndDelete(req.params.cardId);
-        res.json({ message: "Card deleted" });
+        const deleted = await Card.findByIdAndDelete(req.params.cardId);
 
+        if (!deleted) {
+            return res.status(404).json({ error: 'Card not found.' });
+        }
+
+        res.json({ message: 'Card deleted.' });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
