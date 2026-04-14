@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../app.dart';
 import '../models/studyset.dart';
+import '../services/rewards_controller.dart';
 
 class SetCard extends StatelessWidget {
   final StudySet studySet;
@@ -16,98 +16,108 @@ class SetCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Material(
-        color: AppColors.card,
-        borderRadius: BorderRadius.circular(16),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: onTap,
-          splashColor: AppColors.primarySoft,
-          highlightColor: AppColors.primarySoft.withOpacity(0.3),
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.cardBorder),
-            ),
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                // Icon badge
-                Container(
-                  width: 42,
-                  height: 42,
-                  decoration: BoxDecoration(
-                    color: AppColors.primarySoft,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: const Color(0x334F6FFF)),
-                  ),
-                  child: const Icon(
-                    Icons.style_rounded,
-                    color: AppColors.textLink,
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 14),
+    return AnimatedBuilder(
+      animation: rewardsController,
+      builder: (context, _) {
+        final colors = rewardsController.activeTheme.colors;
 
-                // Text
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        studySet.title,
-                        style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimary,
-                        ),
+        return Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          decoration: BoxDecoration(
+            color: colors.card,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: colors.border),
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(18),
+              splashColor: colors.primary.withOpacity(0.12),
+              highlightColor: colors.primary.withOpacity(0.08),
+              onTap: onTap,
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: colors.primary.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(14),
                       ),
-                      const SizedBox(height: 3),
-                      Text(
-                        studySet.description,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: AppColors.textSub,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                      child: Icon(
+                        Icons.menu_book_rounded,
+                        color: colors.primary,
+                        size: 22,
                       ),
-                      const SizedBox(height: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: AppColors.primarySoft,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          '${studySet.cardCount} cards',
-                          style: const TextStyle(
-                            fontSize: 11,
-                            color: AppColors.textLink,
-                            fontWeight: FontWeight.w600,
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            studySet.title,
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              color: colors.text,
+                            ),
                           ),
-                        ),
+                          const SizedBox(height: 3),
+                          Text(
+                            studySet.description,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: colors.textSub,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: colors.primary.withOpacity(0.10),
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            child: Text(
+                              '${studySet.cardCount} cards',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: colors.primary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                    if (onDelete != null)
+                      IconButton(
+                        icon: const Icon(
+                          Icons.delete_outline,
+                          color: Color(0xFFF87171),
+                          size: 18,
+                        ),
+                        onPressed: onDelete,
+                      ),
+                    Icon(
+                      Icons.arrow_forward_ios,
+                      size: 14,
+                      color: colors.textSub,
+                    ),
+                  ],
                 ),
-
-                if (onDelete != null)
-                  IconButton(
-                    icon: const Icon(Icons.delete_outline,
-                        color: AppColors.error, size: 18),
-                    onPressed: onDelete,
-                  ),
-                const Icon(Icons.arrow_forward_ios,
-                    size: 14, color: AppColors.textMuted),
-              ],
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }

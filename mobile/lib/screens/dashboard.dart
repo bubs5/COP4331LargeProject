@@ -1,20 +1,21 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../app.dart';
+
 import '../models/studyset.dart';
-import '../services/setsService.dart';
 import '../services/localstorage.dart';
+import '../services/rewards_controller.dart';
+import '../services/setsService.dart';
 import '../widgets/setCard.dart';
 
-class DashboardScreen extends StatefulWidget{
+class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
 }
 
-class _DashboardScreenState extends State<DashboardScreen>{
+class _DashboardScreenState extends State<DashboardScreen> {
   final _setsService = SetsService();
 
   List<StudySet> _studySets = [];
@@ -23,200 +24,191 @@ class _DashboardScreenState extends State<DashboardScreen>{
   String _errorMessage = '';
 
   @override
-  void initState(){
+  void initState() {
     super.initState();
     _loadData();
   }
 
-  Future<void> _loadData() async{
+  Future<void> _loadData() async {
     setState(() {
       _isLoading = true;
       _errorMessage = '';
     });
 
-    try{
+    try {
       final lastRaw = await LocalStorageService.getString('last_set');
       StudySet? last;
-      if (lastRaw != null && lastRaw.isNotEmpty){
+      if (lastRaw != null && lastRaw.isNotEmpty) {
         last = StudySet.fromJson(jsonDecode(lastRaw) as Map<String, dynamic>);
       }
 
       final sets = await _setsService.getStudySets();
 
       if (!mounted) return;
-      setState((){
+      setState(() {
         _studySets = sets;
         _lastSet = last;
         _isLoading = false;
       });
-    }
-    catch (e){
+    } catch (_) {
       if (!mounted) return;
-      setState((){
+      setState(() {
         _errorMessage = 'Failed to load study sets.';
         _isLoading = false;
       });
     }
   }
 
-  Future<void> _openSet(StudySet set) async{
+  Future<void> _openSet(StudySet set) async {
     await LocalStorageService.saveString('last_set', jsonEncode(set.toJson()));
     if (!mounted) return;
     context.go('/sets/${set.id}');
   }
 
   @override
-  Widget build(BuildContext context){
-    return Scaffold(
-      backgroundColor: AppColors.bg,
-      appBar: AppBar(
-        backgroundColor: AppColors.bg,
-        title: const Text(
-          'StudyRewards',
-          style: TextStyle(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.w700,
-            fontSize: 18,
-          ),
-        ),
-        actions: [
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: rewardsController,
+      builder: (context, _) {
+        final colors = rewardsController.activeTheme.colors;
 
-        ],
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Container(height: 1, color: AppColors.cardBorder),
-        ),
-      ),
-      floatingActionButton: _buildFab(),
-      body: RefreshIndicator(
-        color: AppColors.primary,
-        backgroundColor: AppColors.card,
-        onRefresh: _loadData,
-        child: _isLoading
-            ? const Center(
-            child: CircularProgressIndicator(color: AppColors.primary))
-            : _errorMessage.isNotEmpty
-            ? _buildError()
-            : _buildBody(),
-      ),
-    );
-  }
-
-  Widget _buildFab() {
-    return FloatingActionButton.extended(
-      onPressed: () => context.go('/sets/new'),
-      backgroundColor: AppColors.primary,
-      foregroundColor: AppColors.textPrimary,
-      elevation: 0,
-      icon: const Icon(Icons.add_rounded),
-      label: const Text(
-        'New Set',
-        style: TextStyle(fontWeight: FontWeight.w600),
-      ),
-    );
-  }
-
-  Widget _buildError(){
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Text(
-          _errorMessage,
-          style: const TextStyle(color: AppColors.error),
-          textAlign: TextAlign.center,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBody() {
-    return ListView(
-      physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(20, 24, 20, 100),
-      children: [
-        //welcome
-        const Text(
-          'Welcome Back',
-          style: TextStyle(
-            fontSize: 28,
-            fontWeight: FontWeight.w800,
-            color: AppColors.textPrimary,
-            letterSpacing: -0.8,
-          ),
-        ),
-        const SizedBox(height: 4),
-        const Text(
-          'Pick up where you left off.',
-          style: TextStyle(fontSize: 14, color: AppColors.textSub),
-        ),
-        const SizedBox(height: 24),
-
-        //recent activity card
-        _buildRecentCard(),
-        const SizedBox(height: 28),
-
-        //sets header
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              'Your Sets',
+        return Scaffold(
+          backgroundColor: colors.bg,
+          appBar: AppBar(
+            backgroundColor: colors.bg,
+            title: Text(
+              'StudyRewards',
               style: TextStyle(
-                fontSize: 18,
+                color: colors.text,
                 fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
+                fontSize: 18,
               ),
             ),
-            GestureDetector(
-              onTap: () => context.go('/sets/new'),
-              child: const Text(
-                '+ Create New',
-                style: TextStyle(
-                  fontSize: 13,
-                  color: AppColors.textLink,
-                  fontWeight: FontWeight.w600,
+            bottom: PreferredSize(
+              preferredSize: const Size.fromHeight(1),
+              child: Container(height: 1, color: colors.border),
+            ),
+          ),
+          floatingActionButton: FloatingActionButton.extended(
+            onPressed: () => context.go('/sets/new'),
+            backgroundColor: colors.primary,
+            foregroundColor: colors.text,
+            elevation: 0,
+            icon: const Icon(Icons.add_rounded),
+            label: const Text(
+              'New Set',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
+          ),
+          body: RefreshIndicator(
+            color: colors.primary,
+            backgroundColor: colors.card,
+            onRefresh: _loadData,
+            child: _isLoading
+                ? Center(
+              child: CircularProgressIndicator(color: colors.primary),
+            )
+                : _errorMessage.isNotEmpty
+                ? Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Text(
+                  _errorMessage,
+                  style: const TextStyle(color: Color(0xFFF87171)),
+                  textAlign: TextAlign.center,
                 ),
               ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 14),
-
-        if (_studySets.isEmpty)
-          _buildEmptySets()
-        else ...[
-          ...(_studySets.take(3).map((set) => SetCard(
-            studySet: set,
-            onTap: () => _openSet(set),
-          ))),
-          if (_studySets.length > 3)
-            Center(
-              child: GestureDetector(
-                onTap: () => context.go('/sets/new'),
-                child: Text(
-                  'View all ${_studySets.length} sets →',
-                  style: const TextStyle(
-                    color: AppColors.textLink,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
+            )
+                : ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(20, 24, 20, 100),
+              children: [
+                Text(
+                  'Welcome Back',
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.w800,
+                    color: colors.text,
+                    letterSpacing: -0.8,
                   ),
                 ),
-              ),
+                const SizedBox(height: 4),
+                Text(
+                  'Pick up where you left off.',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: colors.textSub,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                _buildRecentCard(colors),
+                const SizedBox(height: 28),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Your Sets',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: colors.text,
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: () => context.go('/sets/new'),
+                      child: Text(
+                        '+ Create New',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: colors.primary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                if (_studySets.isEmpty)
+                  _buildEmptySets(colors)
+                else ...[
+                  ..._studySets.take(3).map(
+                        (set) => SetCard(
+                      studySet: set,
+                      onTap: () => _openSet(set),
+                    ),
+                  ),
+                  if (_studySets.length > 3)
+                    Center(
+                      child: GestureDetector(
+                        onTap: () => context.go('/sets/new'),
+                        child: Text(
+                          'View all ${_studySets.length} sets →',
+                          style: TextStyle(
+                            color: colors.primary,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ],
             ),
-        ],
-      ],
+          ),
+        );
+      },
     );
   }
 
-  Widget _buildRecentCard(){
+  Widget _buildRecentCard(dynamic colors) {
     return GestureDetector(
       onTap: _lastSet != null ? () => _openSet(_lastSet!) : null,
       child: Container(
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          color: AppColors.primarySoft,
+          color: colors.primary.withOpacity(0.10),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0x334F6FFF)),
+          border: Border.all(color: colors.primary.withOpacity(0.22)),
         ),
         child: Row(
           children: [
@@ -224,12 +216,12 @@ class _DashboardScreenState extends State<DashboardScreen>{
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                color: const Color(0x334F6FFF),
+                color: colors.primary.withOpacity(0.14),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.history_rounded,
-                color: AppColors.textLink,
+                color: colors.primary,
                 size: 22,
               ),
             ),
@@ -238,49 +230,50 @@ class _DashboardScreenState extends State<DashboardScreen>{
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'RECENT ACTIVITY',
                     style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 1.2,
-                      color: AppColors.textSub,
+                      color: colors.textSub,
                     ),
                   ),
                   const SizedBox(height: 4),
                   if (_lastSet != null) ...[
                     Text(
                       _lastSet!.title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimary,
+                        color: colors.text,
                       ),
                     ),
                     Text(
                       '${_lastSet!.cardCount} cards',
-                      style: const TextStyle(
-                          fontSize: 12, color: AppColors.textSub),
+                      style: TextStyle(fontSize: 12, color: colors.textSub),
                     ),
                   ] else
-                    const Text(
+                    Text(
                       'No recent activity',
-                      style: TextStyle(
-                          fontSize: 14, color: AppColors.textSub),
+                      style: TextStyle(fontSize: 14, color: colors.textSub),
                     ),
                 ],
               ),
             ),
             if (_lastSet != null)
-              const Icon(Icons.arrow_forward_ios,
-                  size: 14, color: AppColors.textMuted),
+              Icon(
+                Icons.arrow_forward_ios,
+                size: 14,
+                color: colors.textSub,
+              ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildEmptySets(){
+  Widget _buildEmptySets(dynamic colors) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 40),
       child: Column(
@@ -289,23 +282,28 @@ class _DashboardScreenState extends State<DashboardScreen>{
             width: 64,
             height: 64,
             decoration: BoxDecoration(
-              color: AppColors.primarySoft,
+              color: colors.primary.withOpacity(0.10),
               borderRadius: BorderRadius.circular(16),
             ),
-
+            child: Icon(
+              Icons.library_books_rounded,
+              color: colors.primary,
+              size: 28,
+            ),
           ),
           const SizedBox(height: 16),
-          const Text(
+          Text(
             'No study sets yet',
             style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary),
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: colors.text,
+            ),
           ),
           const SizedBox(height: 6),
-          const Text(
+          Text(
             'Tap + Create New to make your first set.',
-            style: TextStyle(fontSize: 13, color: AppColors.textSub),
+            style: TextStyle(fontSize: 13, color: colors.textSub),
             textAlign: TextAlign.center,
           ),
         ],

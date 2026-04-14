@@ -1,35 +1,41 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../app.dart';
+
 import '../models/flashcard.dart';
 import '../models/studyset.dart';
+import '../services/rewards_controller.dart';
 import '../services/setsService.dart';
 
-class FlashcardsScreen extends StatefulWidget{
+class FlashcardsScreen extends StatefulWidget {
   final String? setId;
-  const FlashcardsScreen({super.key, this.setId});
+
+  const FlashcardsScreen({
+    super.key,
+    this.setId,
+  });
 
   @override
   State<FlashcardsScreen> createState() => _FlashcardsScreenState();
 }
 
 class _FlashcardsScreenState extends State<FlashcardsScreen>
-    with SingleTickerProviderStateMixin{
+    with SingleTickerProviderStateMixin {
   final _setsService = SetsService();
 
   List<Flashcard> _cards = [];
   StudySet? _studySet;
   int _currentIndex = 0;
-  bool _isFlipped   = false;
-  bool _isLoading   = true;
-  String _error     = '';
+  bool _isFlipped = false;
+  bool _isLoading = true;
+  bool _awardedSessionPoints = false;
+  String _error = '';
 
   late AnimationController _animCtrl;
   late Animation<double> _flipAnim;
 
   @override
-  void initState(){
+  void initState() {
     super.initState();
     _animCtrl = AnimationController(
       duration: const Duration(milliseconds: 350),
@@ -42,205 +48,263 @@ class _FlashcardsScreenState extends State<FlashcardsScreen>
   }
 
   @override
-  void dispose(){
+  void dispose() {
     _animCtrl.dispose();
     super.dispose();
   }
 
-  Future<void> _loadData() async{
-    if (widget.setId == null){
-      setState((){ _error = 'No set selected.'; _isLoading = false; });
+  Future<void> _loadData() async {
+    if (widget.setId == null) {
+      setState(() {
+        _error = 'No set selected.';
+        _isLoading = false;
+      });
       return;
     }
-    try{
+
+    try {
       final results = await Future.wait([
         _setsService.getStudySetById(widget.setId!),
         _setsService.getCardsForSet(widget.setId!),
       ]);
+
       if (!mounted) return;
-      setState((){
+
+      final loadedCards = results[1] as List<Flashcard>;
+
+      setState(() {
         _studySet = results[0] as StudySet?;
-        _cards    = results[1] as List<Flashcard>;
+        _cards = loadedCards;
+        _isLoading = false;
+      });
+
+      if (!_awardedSessionPoints && loadedCards.isNotEmpty) {
+        _awardedSessionPoints = true;
+        await rewardsController.award('flashcard_session');
+      }
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _error = 'Failed to load flashcards.';
         _isLoading = false;
       });
     }
-    catch (e){
-      if (!mounted) return;
-      setState((){ _error = 'Failed to load flashcards.'; _isLoading = false; });
-    }
   }
 
-  void _flipCard(){
+  void _flipCard() {
     _isFlipped ? _animCtrl.reverse() : _animCtrl.forward();
     setState(() => _isFlipped = !_isFlipped);
   }
 
-  void _nextCard(){
-    if (_currentIndex < _cards.length - 1){
+  void _nextCard() {
+    if (_currentIndex < _cards.length - 1) {
       _animCtrl.reset();
-      setState((){ _currentIndex++; _isFlipped = false; });
+      setState(() {
+        _currentIndex++;
+        _isFlipped = false;
+      });
     }
   }
 
-  void _prevCard(){
-    if (_currentIndex > 0){
+  void _prevCard() {
+    if (_currentIndex > 0) {
       _animCtrl.reset();
-      setState((){ _currentIndex--; _isFlipped = false; });
+      setState(() {
+        _currentIndex--;
+        _isFlipped = false;
+      });
+    }
+  }
+
+  void _finishSession() {
+    if (widget.setId != null) {
+      context.go('/sets/${widget.setId}');
+    } else {
+      context.go('/dashboard');
     }
   }
 
   @override
-  Widget build(BuildContext context){
-    return Scaffold(
-      backgroundColor: AppColors.bg,
-      appBar: AppBar(
-        backgroundColor: AppColors.bg,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded, color: AppColors.textSub),
-          onPressed: () => widget.setId != null
-              ? context.go('/sets/${widget.setId}')
-              : context.go('/dashboard'),
-        ),
-        title: Text(
-          _studySet?.title ?? 'Flashcards',
-          style: const TextStyle(
-              color: AppColors.textPrimary, fontWeight: FontWeight.w700),
-        ),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Container(height: 1, color: AppColors.cardBorder),
-        ),
-      ),
-      body: _isLoading
-          ? const Center(
-          child: CircularProgressIndicator(color: AppColors.primary))
-          : _error.isNotEmpty
-          ? Center(
-          child: Text(_error,
-              style: const TextStyle(color: AppColors.error)))
-          : _cards.isEmpty
-          ? const Center(
-          child: Text('No cards in this set.',
-              style: TextStyle(color: AppColors.textSub)))
-          : _buildStudyView(),
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: rewardsController,
+      builder: (context, _) {
+        final colors = rewardsController.activeTheme.colors;
+
+        return Scaffold(
+          backgroundColor: colors.bg,
+          appBar: AppBar(
+            backgroundColor: colors.bg,
+            leading: IconButton(
+              icon: Icon(Icons.arrow_back_rounded, color: colors.textSub),
+              onPressed: () => widget.setId != null
+                  ? context.go('/sets/${widget.setId}')
+                  : context.go('/dashboard'),
+            ),
+            title: Text(
+              _studySet?.title ?? 'Flashcards',
+              style: TextStyle(
+                color: colors.text,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            bottom: PreferredSize(
+              preferredSize: const Size.fromHeight(1),
+              child: Container(height: 1, color: colors.border),
+            ),
+          ),
+          body: _isLoading
+              ? Center(
+            child: CircularProgressIndicator(color: colors.primary),
+          )
+              : _error.isNotEmpty
+              ? Center(
+            child: Text(
+              _error,
+              style: const TextStyle(color: Color(0xFFF87171)),
+            ),
+          )
+              : _cards.isEmpty
+              ? Center(
+            child: Text(
+              'No cards in this set.',
+              style: TextStyle(color: colors.textSub),
+            ),
+          )
+              : _buildStudyView(colors),
+        );
+      },
     );
   }
 
-  Widget _buildStudyView(){
+  Widget _buildStudyView(dynamic colors) {
     final card = _cards[_currentIndex];
+    final progress = (_currentIndex + 1) / _cards.length;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 24, 20, 28),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          //progress bar and counter
           Row(
             children: [
               Text(
-                '${_currentIndex + 1} / ${_cards.length}',
-                style: const TextStyle(
-                    color: AppColors.textSub, fontSize: 13),
+                'Card ${_currentIndex + 1} of ${_cards.length}',
+                style: TextStyle(
+                  color: colors.textSub,
+                  fontSize: 13,
+                ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: LinearProgressIndicator(
-                    value: (_currentIndex + 1) / _cards.length,
-                    minHeight: 4,
-                    backgroundColor: const Color(0x1A6378FF),
-                    valueColor: const AlwaysStoppedAnimation(AppColors.primary),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: colors.primary.withOpacity(0.10),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  '${(progress * 100).round()}%',
+                  style: TextStyle(
+                    color: colors.primary,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 12,
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 32),
-
-          //flip card
+          const SizedBox(height: 10),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: LinearProgressIndicator(
+              minHeight: 6,
+              value: progress,
+              backgroundColor: colors.border.withOpacity(0.45),
+              valueColor: AlwaysStoppedAnimation(colors.primary),
+            ),
+          ),
+          const SizedBox(height: 24),
           Expanded(
             child: GestureDetector(
               onTap: _flipCard,
               child: AnimatedBuilder(
                 animation: _flipAnim,
-                builder: (context, _){
-                  final angle        = _flipAnim.value * pi;
-                  final isShowingBack = angle > pi / 2;
+                builder: (context, child) {
+                  final angle = _flipAnim.value * pi;
+                  final isBack = angle > pi / 2;
 
                   return Transform(
+                    alignment: Alignment.center,
                     transform: Matrix4.identity()
                       ..setEntry(3, 2, 0.001)
                       ..rotateY(angle),
-                    alignment: Alignment.center,
                     child: Container(
                       width: double.infinity,
+                      padding: const EdgeInsets.all(24),
                       decoration: BoxDecoration(
-                        color: isShowingBack
-                            ? const Color(0xFF12103A)   // violet-tinted back
-                            : AppColors.card,
+                        color: colors.card,
                         borderRadius: BorderRadius.circular(24),
                         border: Border.all(
-                          color: isShowingBack
-                              ? const Color(0x408B6FFF)
-                              : AppColors.cardBorder,
+                          color: _isFlipped
+                              ? colors.primary.withOpacity(0.35)
+                              : colors.border,
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: (isShowingBack
-                                ? AppColors.accent
-                                : AppColors.primary)
-                                .withOpacity(0.12),
-                            blurRadius: 40,
+                            color: colors.primary.withOpacity(0.08),
+                            blurRadius: 22,
                             offset: const Offset(0, 10),
                           ),
                         ],
                       ),
                       child: Transform(
-                        transform: Matrix4.identity()
-                          ..rotateY(isShowingBack ? pi : 0),
                         alignment: Alignment.center,
-                        child: Padding(
-                          padding: const EdgeInsets.all(32),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              // Label pill
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 12, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: isShowingBack
-                                      ? const Color(0x338B6FFF)
-                                      : AppColors.primarySoft,
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: Text(
-                                  isShowingBack ? 'DEFINITION' : 'TERM',
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w700,
-                                    letterSpacing: 1.4,
-                                    color: isShowingBack
-                                        ? AppColors.accent
-                                        : AppColors.textLink,
-                                  ),
-                                ),
+                        transform: Matrix4.identity()
+                          ..rotateY(isBack ? pi : 0),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
                               ),
-                              const SizedBox(height: 24),
-                              Text(
-                                isShowingBack
-                                    ? card.definition
-                                    : card.term,
-                                style: const TextStyle(
-                                  fontSize: 24,
+                              decoration: BoxDecoration(
+                                color: colors.primary.withOpacity(0.10),
+                                borderRadius: BorderRadius.circular(999),
+                              ),
+                              child: Text(
+                                isBack ? 'Definition' : 'Term',
+                                style: TextStyle(
+                                  color: colors.primary,
                                   fontWeight: FontWeight.w700,
-                                  color: AppColors.textPrimary,
-                                  height: 1.4,
+                                  fontSize: 12,
                                 ),
-                                textAlign: TextAlign.center,
                               ),
-                            ],
-                          ),
+                            ),
+                            const SizedBox(height: 22),
+                            Text(
+                              isBack ? card.definition : card.term,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: colors.text,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 24,
+                                height: 1.35,
+                              ),
+                            ),
+                            const SizedBox(height: 18),
+                            Text(
+                              'Tap card to flip',
+                              style: TextStyle(
+                                color: colors.textSub,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
@@ -249,112 +313,96 @@ class _FlashcardsScreenState extends State<FlashcardsScreen>
               ),
             ),
           ),
-
-          const SizedBox(height: 14),
-          const Text(
-            'Tap card to flip',
-            style: TextStyle(color: AppColors.textMuted, fontSize: 12),
-          ),
-          const SizedBox(height: 24),
-
-          //navigation row
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          const SizedBox(height: 22),
+          Column(
             children: [
-              _navButton(
-                icon: Icons.arrow_back_ios_new_rounded,
-                enabled: _currentIndex > 0,
-                onTap: _prevCard,
-              ),
-
-              //centre counter
-              Column(
+              Row(
                 children: [
-                  Text(
-                    '${_currentIndex + 1}',
-                    style: const TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.textPrimary),
+                  Expanded(
+                    child: _navButton(
+                      label: 'Previous',
+                      icon: Icons.arrow_back_rounded,
+                      onTap: _currentIndex > 0 ? _prevCard : null,
+                      colors: colors,
+                    ),
                   ),
-                  Text(
-                    'of ${_cards.length}',
-                    style: const TextStyle(
-                        color: AppColors.textSub, fontSize: 12),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _navButton(
+                      label: 'Next',
+                      icon: Icons.arrow_forward_rounded,
+                      onTap: _currentIndex < _cards.length - 1 ? _nextCard : null,
+                      colors: colors,
+                    ),
                   ),
                 ],
               ),
-
-              _navButton(
-                icon: Icons.arrow_forward_ios_rounded,
-                enabled: _currentIndex < _cards.length - 1,
-                onTap: _nextCard,
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: _finishSession,
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(color: colors.border),
+                    backgroundColor: colors.card,
+                    foregroundColor: colors.textSub,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                  child: const Text(
+                    'Finish Session',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
               ),
             ],
           ),
-
-          //restart when finished
-          if (_currentIndex == _cards.length - 1) ...[
-            const SizedBox(height: 20),
-            GestureDetector(
-              onTap: (){
-                _animCtrl.reset();
-                setState((){ _currentIndex = 0; _isFlipped = false; });
-              },
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 20, vertical: 10),
-                decoration: BoxDecoration(
-                  color: AppColors.primarySoft,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: const Color(0x334F6FFF)),
-                ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.replay_rounded,
-                        size: 16, color: AppColors.textLink),
-                    SizedBox(width: 6),
-                    Text(
-                      'Start Over',
-                      style: TextStyle(
-                          color: AppColors.textLink,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 13),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
         ],
       ),
     );
   }
 
   Widget _navButton({
+    required String label,
     required IconData icon,
-    required bool enabled,
-    required VoidCallback onTap,
-  }){
+    required VoidCallback? onTap,
+    required dynamic colors,
+  }) {
+    final enabled = onTap != null;
+
     return GestureDetector(
-      onTap: enabled ? onTap : null,
-      child: Container(
-        width: 52,
-        height: 52,
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
-          color: enabled ? AppColors.primarySoft : const Color(0x0DFFFFFF),
-          shape: BoxShape.circle,
+          color: enabled ? colors.primary.withOpacity(0.10) : colors.surface,
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: enabled
-                ? const Color(0x334F6FFF)
-                : const Color(0x1AFFFFFF),
+            color: enabled ? colors.primary.withOpacity(0.22) : colors.border,
           ),
         ),
-        child: Icon(
-          icon,
-          size: 18,
-          color: enabled ? AppColors.textLink : AppColors.textMuted,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              size: 18,
+              color: enabled ? colors.primary : colors.textSub,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: TextStyle(
+                color: enabled ? colors.primary : colors.textSub,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
         ),
       ),
     );

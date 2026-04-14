@@ -1,24 +1,30 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../app.dart';
+
 import '../models/flashcard.dart';
 import '../models/studyset.dart';
+import '../services/rewards_controller.dart';
 import '../services/setsService.dart';
 import '../widgets/appButton.dart';
 
-class QuizScreen extends StatefulWidget{
+class QuizScreen extends StatefulWidget {
   final String? setId;
-  const QuizScreen({super.key, this.setId});
+
+  const QuizScreen({
+    super.key,
+    this.setId,
+  });
 
   @override
   State<QuizScreen> createState() => _QuizScreenState();
 }
 
-class _QuizQuestion{
+class _QuizQuestion {
   final Flashcard card;
   final List<String> options;
   final int correctIndex;
+
   _QuizQuestion({
     required this.card,
     required this.options,
@@ -26,72 +32,87 @@ class _QuizQuestion{
   });
 }
 
-class _QuizScreenState extends State<QuizScreen>{
+class _QuizScreenState extends State<QuizScreen> {
   final _setsService = SetsService();
   final _rng = Random();
 
   StudySet? _studySet;
+  List<Flashcard> _cards = [];
   List<_QuizQuestion> _questions = [];
+
   int _currentIndex = 0;
+  int _score = 0;
   int? _selectedIndex;
   bool _answered = false;
-  int _score     = 0;
   bool _finished = false;
-
   bool _isLoading = true;
-  String _error   = '';
+  bool _awardedQuizPoints = false;
+  String _error = '';
 
   @override
-  void initState(){
+  void initState() {
     super.initState();
-    _loadData();
+    _loadQuiz();
   }
 
-  Future<void> _loadData() async{
-    if (widget.setId == null){
-      setState((){ _error = 'No set selected.'; _isLoading = false; });
+  Future<void> _loadQuiz() async {
+    if (widget.setId == null) {
+      setState(() {
+        _error = 'No set selected.';
+        _isLoading = false;
+      });
       return;
     }
-    try{
+
+    try {
       final results = await Future.wait([
         _setsService.getStudySetById(widget.setId!),
         _setsService.getCardsForSet(widget.setId!),
       ]);
 
       final setData = results[0] as StudySet?;
-      final cards   = results[1] as List<Flashcard>;
+      final cards = results[1] as List<Flashcard>;
 
-      if (!mounted) return;
-
-      if (cards.length < 2){
-        setState((){
-          _error = 'Need at least 2 cards to take a quiz.';
+      if (cards.isEmpty) {
+        if (!mounted) return;
+        setState(() {
+          _studySet = setData;
+          _cards = [];
           _isLoading = false;
         });
         return;
       }
 
-      setState((){
-        _studySet  = setData;
-        _questions = _buildQuestions(cards);
+      final questions = _buildQuestions(cards);
+
+      if (!mounted) return;
+      setState(() {
+        _studySet = setData;
+        _cards = cards;
+        _questions = questions;
+        _isLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _error = 'Failed to load quiz.';
         _isLoading = false;
       });
     }
-    catch (e){
-      if (!mounted) return;
-      setState((){ _error = 'Failed to load quiz.'; _isLoading = false; });
-    }
   }
 
-  List<_QuizQuestion> _buildQuestions(List<Flashcard> cards){
-    final shuffled       = List<Flashcard>.from(cards)..shuffle(_rng);
-    final allDefinitions = cards.map((c) => c.definition).toList();
-
-    return shuffled.map((card){
-      final wrongs  = List<String>.from(allDefinitions)
-        ..remove(card.definition)
+  List<_QuizQuestion> _buildQuestions(List<Flashcard> cards) {
+    return cards.map((card) {
+      final otherDefinitions = cards
+          .where((c) => c.id != card.id)
+          .map((c) => c.definition)
+          .toList()
         ..shuffle(_rng);
-      final options = [card.definition, ...wrongs.take(3)]..shuffle(_rng);
+
+      final options = <String>[card.definition];
+      options.addAll(otherDefinitions.take(3));
+      options.shuffle(_rng);
+
       return _QuizQuestion(
         card: card,
         options: options,
@@ -100,75 +121,108 @@ class _QuizScreenState extends State<QuizScreen>{
     }).toList();
   }
 
-  void _selectAnswer(int index){
+  void _selectAnswer(int index) {
     if (_answered) return;
-    setState((){
+
+    final current = _questions[_currentIndex];
+    final correct = index == current.correctIndex;
+
+    setState(() {
       _selectedIndex = index;
       _answered = true;
-      if (index == _questions[_currentIndex].correctIndex) _score++;
+      if (correct) _score++;
     });
   }
 
-  void _next(){
-    if (_currentIndex < _questions.length - 1){
-      setState((){
+  Future<void> _next() async {
+    if (_currentIndex < _questions.length - 1) {
+      setState(() {
         _currentIndex++;
         _selectedIndex = null;
         _answered = false;
       });
-    } else{
+    } else {
+      if (!_awardedQuizPoints) {
+        _awardedQuizPoints = true;
+        await rewardsController.award('quiz_complete');
+        if (_score == _questions.length) {
+          await rewardsController.award('quiz_perfect');
+        }
+      }
+
+      if (!mounted) return;
       setState(() => _finished = true);
     }
   }
 
-  void _restart(){
-    final cards = _questions.map((q) => q.card).toList();
-    setState((){
-      _questions     = _buildQuestions(cards);
-      _currentIndex  = 0;
+  void _restart() {
+    setState(() {
+      _currentIndex = 0;
+      _score = 0;
       _selectedIndex = null;
-      _answered      = false;
-      _score         = 0;
-      _finished      = false;
+      _answered = false;
+      _finished = false;
+      _awardedQuizPoints = false;
+      _questions = _buildQuestions(_cards);
     });
   }
 
   @override
-  Widget build(BuildContext context){
-    return Scaffold(
-      backgroundColor: AppColors.bg,
-      appBar: AppBar(
-        backgroundColor: AppColors.bg,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded, color: AppColors.textSub),
-          onPressed: () => widget.setId != null
-              ? context.go('/sets/${widget.setId}')
-              : context.go('/dashboard'),
-        ),
-        title: Text(
-          _studySet?.title ?? 'Quiz',
-          style: const TextStyle(
-              color: AppColors.textPrimary, fontWeight: FontWeight.w700),
-        ),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Container(height: 1, color: AppColors.cardBorder),
-        ),
-      ),
-      body: _isLoading
-          ? const Center(
-          child: CircularProgressIndicator(color: AppColors.primary))
-          : _error.isNotEmpty
-          ? Center(
-          child: Text(_error,
-              style: const TextStyle(color: AppColors.error)))
-          : _finished
-          ? _buildResults()
-          : _buildQuizView(),
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: rewardsController,
+      builder: (context, _) {
+        final colors = rewardsController.activeTheme.colors;
+
+        return Scaffold(
+          backgroundColor: colors.bg,
+          appBar: AppBar(
+            backgroundColor: colors.bg,
+            leading: IconButton(
+              icon: Icon(Icons.arrow_back_rounded, color: colors.textSub),
+              onPressed: () => widget.setId != null
+                  ? context.go('/sets/${widget.setId}')
+                  : context.go('/dashboard'),
+            ),
+            title: Text(
+              _studySet?.title ?? 'Quiz',
+              style: TextStyle(
+                color: colors.text,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            bottom: PreferredSize(
+              preferredSize: const Size.fromHeight(1),
+              child: Container(height: 1, color: colors.border),
+            ),
+          ),
+          body: _isLoading
+              ? Center(
+            child: CircularProgressIndicator(color: colors.primary),
+          )
+              : _error.isNotEmpty
+              ? Center(
+            child: Text(
+              _error,
+              style: const TextStyle(color: Color(0xFFF87171)),
+            ),
+          )
+              : _cards.isEmpty
+              ? Center(
+            child: Text(
+              'No cards in this set.',
+              style: TextStyle(color: colors.textSub),
+            ),
+          )
+              : _finished
+              ? _buildResults(colors)
+              : _buildQuizView(colors),
+        );
+      },
     );
   }
 
-  Widget _buildQuizView(){
+  Widget _buildQuizView(dynamic colors) {
     final q = _questions[_currentIndex];
 
     return Padding(
@@ -176,28 +230,31 @@ class _QuizScreenState extends State<QuizScreen>{
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          //progress and score row
           Row(
             children: [
               Text(
                 'Question ${_currentIndex + 1} of ${_questions.length}',
-                style: const TextStyle(
-                    color: AppColors.textSub, fontSize: 13),
+                style: TextStyle(
+                  color: colors.textSub,
+                  fontSize: 13,
+                ),
               ),
               const Spacer(),
               Container(
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 10, vertical: 3),
+                  horizontal: 10,
+                  vertical: 3,
+                ),
                 decoration: BoxDecoration(
-                  color: AppColors.primarySoft,
-                  borderRadius: BorderRadius.circular(20),
+                  color: colors.primary.withOpacity(0.10),
+                  borderRadius: BorderRadius.circular(999),
                 ),
                 child: Text(
                   '$_score / ${_currentIndex + (_answered ? 1 : 0)}',
-                  style: const TextStyle(
-                    color: AppColors.textLink,
+                  style: TextStyle(
+                    color: colors.primary,
                     fontSize: 12,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
@@ -205,27 +262,25 @@ class _QuizScreenState extends State<QuizScreen>{
           ),
           const SizedBox(height: 8),
           ClipRRect(
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: BorderRadius.circular(999),
             child: LinearProgressIndicator(
               value: (_currentIndex + 1) / _questions.length,
-              minHeight: 4,
-              backgroundColor: const Color(0x1A6378FF),
-              valueColor: const AlwaysStoppedAnimation(AppColors.primary),
+              minHeight: 6,
+              backgroundColor: colors.border.withOpacity(0.45),
+              valueColor: AlwaysStoppedAnimation(colors.primary),
             ),
           ),
           const SizedBox(height: 28),
-
-          //question card
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: AppColors.card,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.cardBorder),
+              color: colors.card,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: colors.border),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.primary.withOpacity(0.06),
+                  color: colors.primary.withOpacity(0.06),
                   blurRadius: 20,
                   offset: const Offset(0, 6),
                 ),
@@ -234,18 +289,20 @@ class _QuizScreenState extends State<QuizScreen>{
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'What is the definition of:',
                   style: TextStyle(
-                      fontSize: 12, color: AppColors.textSub),
+                    fontSize: 12,
+                    color: colors.textSub,
+                  ),
                 ),
                 const SizedBox(height: 10),
                 Text(
                   q.card.term,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
+                    color: colors.text,
                     height: 1.3,
                   ),
                 ),
@@ -253,28 +310,22 @@ class _QuizScreenState extends State<QuizScreen>{
             ),
           ),
           const SizedBox(height: 20),
-
-          //answer options
-          ...List.generate(q.options.length, (i){
-            return _buildOption(q, i);
-          }),
-
+          ...List.generate(q.options.length, (i) => _buildOption(q, i, colors)),
           const Spacer(),
-
           if (_answered)
             AppButton(
               label: _currentIndex < _questions.length - 1
                   ? 'Next Question →'
                   : 'See Results',
-              onPressed: _next,
+              onPressed: () => _next(),
             ),
         ],
       ),
     );
   }
 
-  Widget _buildOption(_QuizQuestion q, int i){
-    final isCorrect  = i == q.correctIndex;
+  Widget _buildOption(_QuizQuestion q, int i, dynamic colors) {
+    final isCorrect = i == q.correctIndex;
     final isSelected = i == _selectedIndex;
 
     Color borderColor;
@@ -282,35 +333,36 @@ class _QuizScreenState extends State<QuizScreen>{
     Color textColor;
     Widget? trailingIcon;
 
-    if (_answered){
-      if (isCorrect){
-        bgColor     = const Color(0x1A86EFAC);
+    if (_answered) {
+      if (isCorrect) {
+        bgColor = const Color(0x1A86EFAC);
         borderColor = const Color(0x4D86EFAC);
-        textColor   = AppColors.success;
-        trailingIcon = const Icon(Icons.check_circle_rounded,
-            color: AppColors.success, size: 18);
-      }
-      else if (isSelected){
-        bgColor     = AppColors.errorBg;
+        textColor = const Color(0xFF86EFAC);
+        trailingIcon = const Icon(
+          Icons.check_circle_rounded,
+          color: Color(0xFF86EFAC),
+          size: 18,
+        );
+      } else if (isSelected) {
+        bgColor = const Color(0x1AF87171);
         borderColor = const Color(0x4DF87171);
-        textColor   = AppColors.error;
-        trailingIcon = const Icon(Icons.cancel_rounded,
-            color: AppColors.error, size: 18);
+        textColor = const Color(0xFFF87171);
+        trailingIcon = const Icon(
+          Icons.cancel_rounded,
+          color: Color(0xFFF87171),
+          size: 18,
+        );
+      } else {
+        bgColor = colors.surface;
+        borderColor = colors.border;
+        textColor = colors.textSub;
       }
-      else{
-        bgColor     = const Color(0x0DFFFFFF);
-        borderColor = const Color(0x1AFFFFFF);
-        textColor   = AppColors.textMuted;
-        trailingIcon = null;
-      }
-    }
-    else{
-      bgColor     = AppColors.card;
+    } else {
+      bgColor = colors.card;
       borderColor = isSelected
-          ? const Color(0x664F6FFF)
-          : AppColors.cardBorder;
-      textColor   = AppColors.textPrimary;
-      trailingIcon = null;
+          ? colors.primary.withOpacity(0.45)
+          : colors.border;
+      textColor = colors.text;
     }
 
     return Padding(
@@ -322,12 +374,11 @@ class _QuizScreenState extends State<QuizScreen>{
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             color: bgColor,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(14),
             border: Border.all(color: borderColor),
           ),
           child: Row(
             children: [
-              // A/B/C/D
               Container(
                 width: 26,
                 height: 26,
@@ -336,20 +387,20 @@ class _QuizScreenState extends State<QuizScreen>{
                       ? const Color(0x3386EFAC)
                       : _answered && isSelected
                       ? const Color(0x33F87171)
-                      : AppColors.primarySoft,
+                      : colors.primary.withOpacity(0.10),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Center(
                   child: Text(
-                    String.fromCharCode(65 + i), // A, B, C, D
+                    String.fromCharCode(65 + i),
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
                       color: _answered && isCorrect
-                          ? AppColors.success
+                          ? const Color(0xFF86EFAC)
                           : _answered && isSelected
-                          ? AppColors.error
-                          : AppColors.textLink,
+                          ? const Color(0xFFF87171)
+                          : colors.primary,
                     ),
                   ),
                 ),
@@ -358,7 +409,10 @@ class _QuizScreenState extends State<QuizScreen>{
               Expanded(
                 child: Text(
                   q.options[i],
-                  style: TextStyle(fontSize: 14, color: textColor),
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: textColor,
+                  ),
                 ),
               ),
               if (trailingIcon != null) ...[
@@ -372,27 +426,21 @@ class _QuizScreenState extends State<QuizScreen>{
     );
   }
 
-  Widget _buildResults(){
+  Widget _buildResults(dynamic colors) {
     final pct = (_score / _questions.length * 100).round();
 
     Color resultColor;
     String resultText;
-    Color glowColor;
 
-    if (pct >= 80){
-      resultColor = AppColors.success;
-      resultText  = 'Excellent!';
-      glowColor   = const Color(0x2086EFAC);
-    }
-    else if (pct >= 60){
+    if (pct >= 80) {
+      resultColor = const Color(0xFF86EFAC);
+      resultText = 'Excellent!';
+    } else if (pct >= 60) {
       resultColor = const Color(0xFFFBBF24);
-      resultText  = 'Good Try!';
-      glowColor   = const Color(0x20FBBF24);
-    }
-    else{
-      resultColor = AppColors.error;
-      resultText  = 'Keep Practicing!';
-      glowColor   = AppColors.errorBg;
+      resultText = 'Good Try!';
+    } else {
+      resultColor = const Color(0xFFF87171);
+      resultText = 'Keep Practicing!';
     }
 
     return Padding(
@@ -400,8 +448,6 @@ class _QuizScreenState extends State<QuizScreen>{
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-
-          const SizedBox(height: 20),
           Text(
             resultText,
             style: TextStyle(
@@ -412,38 +458,37 @@ class _QuizScreenState extends State<QuizScreen>{
             ),
           ),
           const SizedBox(height: 24),
-
-          //score box
           Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(vertical: 28),
             decoration: BoxDecoration(
-              color: AppColors.card,
+              color: colors.card,
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: AppColors.cardBorder),
+              border: Border.all(color: colors.border),
             ),
             child: Column(
               children: [
                 Text(
                   '$_score / ${_questions.length}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 48,
                     fontWeight: FontWeight.w800,
-                    color: AppColors.textPrimary,
+                    color: colors.text,
                     letterSpacing: -1.5,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   '$pct% correct',
-                  style: const TextStyle(
-                      color: AppColors.textSub, fontSize: 16),
+                  style: TextStyle(
+                    color: colors.textSub,
+                    fontSize: 16,
+                  ),
                 ),
               ],
             ),
           ),
           const SizedBox(height: 28),
-
           AppButton(
             label: 'Try Again',
             onPressed: _restart,

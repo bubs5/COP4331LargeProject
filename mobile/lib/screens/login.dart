@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../services/rewards_controller.dart';
 import '../services/authService.dart';
 import '../widgets/appButton.dart';
 import '../widgets/appField.dart';
@@ -51,8 +52,12 @@ class _LoginScreenState extends State<LoginScreen>{
     if (!mounted) return;
 
     if (result.success) {
+      await rewardsController.init();
+      await rewardsController.award('daily_login');
+      if (!mounted) return;
       context.go('/dashboard');
-    } else {
+    }
+    else {
       setState(() {
         _message = result.error ?? 'Login failed.';
         _isLoading = false;
