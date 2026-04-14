@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'models/rewards.dart';
 
 import 'screens/home.dart';
 import 'screens/login.dart';
@@ -13,7 +14,10 @@ import 'screens/sets.dart';
 import 'screens/setsDetail.dart';
 import 'screens/flashcards.dart';
 import 'screens/quiz.dart';
+import 'screens/rewards.dart';
+import 'services/rewardsProvider.dart';
 import 'widgets/bottomnav.dart';
+import 'widgets/pointsToast.dart';
 
 // match web css
 class AppColors {
@@ -95,72 +99,109 @@ final GoRouter _router = GoRouter(
             setId: state.uri.queryParameters['setId'],
           ),
         ),
+        GoRoute(
+          path: '/rewards',
+          builder: (_, __) => const RewardsScreen(),
+        ),
       ],
     ),
   ],
 );
 //app
-class StudyRewardsApp extends StatelessWidget{
+class StudyRewardsApp extends StatefulWidget{
   const StudyRewardsApp({super.key});
 
   @override
-  Widget build(BuildContext context){
-    //make the status bar transparent so background shows
-    SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.light,
-      systemNavigationBarColor: AppColors.bg,
-      systemNavigationBarIconBrightness: Brightness.light,
-    ));
+  State<StudyRewardsApp> createState() => _StudyRewardsAppState();
+}
 
-    return MaterialApp.router(
-      title: 'StudyRewards',
-      debugShowCheckedModeBanner: false,
-      routerConfig: _router,
-      theme: _buildTheme(),
+class _StudyRewardsAppState extends State<StudyRewardsApp> {
+  late final RewardsProvider _rewardsProvider;
+
+  @override
+  void initState() {
+    super.initState();
+    _rewardsProvider = RewardsProvider();
+  }
+
+  @override
+  void dispose() {
+    _rewardsProvider.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context){
+    return AnimatedBuilder(
+      animation: _rewardsProvider,
+      builder: (_, __) {
+        final activeThemeColors = _rewardsProvider.activeTheme.colors;
+        SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
+          statusBarColor: Colors.transparent,
+          statusBarIconBrightness: Brightness.light,
+          systemNavigationBarColor: activeThemeColors.bgColor,
+          systemNavigationBarIconBrightness: Brightness.light,
+        ));
+
+        return MaterialApp.router(
+          title: 'StudyRewards',
+          debugShowCheckedModeBanner: false,
+          routerConfig: _router,
+          theme: _buildTheme(activeThemeColors),
+          builder: (_, child) => RewardsScope(
+            provider: _rewardsProvider,
+            child: Stack(
+              children: [
+                child ?? const SizedBox.shrink(),
+                const PointsToast(),
+              ],
+            ),
+          ),
+        ),
+      },
     );
   }
 
-  ThemeData _buildTheme(){
+  ThemeData _buildTheme(ThemeColors themeColors){
     final base = ColorScheme.dark(
       brightness: Brightness.dark,
-      primary:          AppColors.primary,
-      onPrimary:        AppColors.textPrimary,
-      secondary:        AppColors.accent,
-      onSecondary:      AppColors.textPrimary,
-      surface:          AppColors.surface,
-      onSurface:        AppColors.textPrimary,
+      primary:          themeColors.primaryColor,
+      onPrimary:        themeColors.textColor,
+      secondary:        themeColors.accentColor,
+      onSecondary:      themeColors.textColor,
+      surface:          themeColors.surfaceColor,
+      onSurface:        themeColors.textColor,
       error:            AppColors.error,
-      onError:          AppColors.bg,
-      primaryContainer:   AppColors.primarySoft,
-      onPrimaryContainer: AppColors.textPrimary,
+      onError:          themeColors.bgColor,
+      primaryContainer:   themeColors.primaryColor.withOpacity(0.22),
+      onPrimaryContainer: themeColors.textColor,
       surfaceContainerHighest: const Color(0xFF1A1F3A),
-      onSurfaceVariant:        AppColors.textSub,
+      onSurfaceVariant:        themeColors.textSubColor,
     );
 
     return ThemeData(
       colorScheme: base,
       useMaterial3: true,
-      scaffoldBackgroundColor: AppColors.bg,
+      scaffoldBackgroundColor: themeColors.bgColor,
       fontFamily: 'Arial',
 
-      appBarTheme: const AppBarTheme(
-        backgroundColor: AppColors.bg,
-        foregroundColor: AppColors.textPrimary,
+      appBarTheme: AppBarTheme(
+        backgroundColor: themeColors.bgColor,
+        foregroundColor: themeColors.textColor,
         elevation: 0,
         scrolledUnderElevation: 0,
-        systemOverlayStyle: SystemUiOverlayStyle(
+        systemOverlayStyle: const SystemUiOverlayStyle(
           statusBarColor: Colors.transparent,
           statusBarIconBrightness: Brightness.light,
         ),
       ),
 
       cardTheme: CardThemeData(
-        color: AppColors.card,
+        color: themeColors.cardColor,
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: AppColors.cardBorder),
+          side: BorderSide(color: themeColors.borderColor),
         ),
       ),
 
@@ -171,10 +212,10 @@ class StudyRewardsApp extends StatelessWidget{
 
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: const Color(0xB3080B1C),
+        fillColor: themeColors.bgColor.withOpacity(0.7),
         hintStyle: const TextStyle(color: Color(0xFF3C4A68)),
-        labelStyle: const TextStyle(
-          color: AppColors.textSub,
+        labelStyle: TextStyle(
+          color: themeColors.textSubColor,
           fontSize: 12,
           fontWeight: FontWeight.w700,
           letterSpacing: 0.8,
@@ -185,7 +226,7 @@ class StudyRewardsApp extends StatelessWidget{
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0x726378FF), width: 1.5),
+          borderSide: BorderSide(color: themeColors.primaryColor.withOpacity(0.5), width: 1.5),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -199,31 +240,31 @@ class StudyRewardsApp extends StatelessWidget{
       ),
 
       textButtonTheme: TextButtonThemeData(
-        style: TextButton.styleFrom(foregroundColor: AppColors.textLink),
+        style: TextButton.styleFrom(foregroundColor: themeColors.primaryColor),
       ),
 
       iconButtonTheme: IconButtonThemeData(
-        style: IconButton.styleFrom(foregroundColor: AppColors.textSub),
+        style: IconButton.styleFrom(foregroundColor: themeColors.textSubColor),
       ),
 
-      progressIndicatorTheme: const ProgressIndicatorThemeData(
-        color: AppColors.primary,
-        linearTrackColor: Color(0x2D6378FF),
+      progressIndicatorTheme: ProgressIndicatorThemeData(
+        color: themeColors.primaryColor,
+        linearTrackColor: themeColors.borderColor,
       ),
 
       dialogTheme: DialogThemeData(
-        backgroundColor: AppColors.card,
+        backgroundColor: themeColors.cardColor,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
-          side: const BorderSide(color: AppColors.cardBorder),
+          side: BorderSide(color: themeColors.borderColor),
         ),
-        titleTextStyle: const TextStyle(
-          color: AppColors.textPrimary,
+        titleTextStyle: TextStyle(
+          color: themeColors.textColor,
           fontSize: 18,
           fontWeight: FontWeight.w700,
         ),
-        contentTextStyle: const TextStyle(
-          color: AppColors.textSub,
+        contentTextStyle: TextStyle(
+          color: themeColors.textSubColor,
           fontSize: 14,
         ),
       ),

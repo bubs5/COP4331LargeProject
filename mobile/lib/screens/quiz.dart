@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../app.dart';
 import '../models/flashcard.dart';
+import '../models/rewards.dart';
 import '../models/studyset.dart';
+import '../services/rewardsProvider.dart';
 import '../services/setsService.dart';
 import '../widgets/appButton.dart';
 
@@ -37,6 +39,8 @@ class _QuizScreenState extends State<QuizScreen>{
   bool _answered = false;
   int _score     = 0;
   bool _finished = false;
+  bool _pointsAwarded = false;
+  String _pointsBanner = '';
 
   bool _isLoading = true;
   String _error   = '';
@@ -118,6 +122,24 @@ class _QuizScreenState extends State<QuizScreen>{
       });
     } else{
       setState(() => _finished = true);
+      _awardQuizPoints();
+    }
+  }
+
+  Future<void> _awardQuizPoints() async {
+    if (_pointsAwarded) return;
+    _pointsAwarded = true;
+    final rewards = RewardsScope.of(context);
+    final isPerfect = _score == _questions.length && _questions.isNotEmpty;
+    if (isPerfect) {
+      await rewards.award(RewardEventType.quizPerfect);
+      _pointsBanner = 'Perfect score! You earned 75 points!';
+    } else {
+      await rewards.award(RewardEventType.quizComplete);
+      _pointsBanner = 'Quiz complete! You earned 30 points!';
+    }
+    if (mounted) {
+      setState(() {});
     }
   }
 
@@ -128,9 +150,11 @@ class _QuizScreenState extends State<QuizScreen>{
       _currentIndex  = 0;
       _selectedIndex = null;
       _answered      = false;
-      _score         = 0;
-      _finished      = false;
-    });
+        _score         = 0;
+        _finished      = false;
+        _pointsAwarded = false;
+        _pointsBanner = '';
+      });
   }
 
   @override
@@ -400,7 +424,26 @@ class _QuizScreenState extends State<QuizScreen>{
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-
+          if (_pointsBanner.isNotEmpty)
+            Container(
+              width: double.infinity,
+              margin: const EdgeInsets.only(bottom: 14),
+              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                color: AppColors.primarySoft,
+                border: Border.all(color: const Color(0x334F6FFF)),
+              ),
+              child: Text(
+                _pointsBanner,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: AppColors.textLink,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
           const SizedBox(height: 20),
           Text(
             resultText,

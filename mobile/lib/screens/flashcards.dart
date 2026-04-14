@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../app.dart';
 import '../models/flashcard.dart';
+import '../models/rewards.dart';
 import '../models/studyset.dart';
+import '../services/rewardsProvider.dart';
 import '../services/setsService.dart';
 
 class FlashcardsScreen extends StatefulWidget{
@@ -24,6 +26,8 @@ class _FlashcardsScreenState extends State<FlashcardsScreen>
   bool _isFlipped   = false;
   bool _isLoading   = true;
   String _error     = '';
+  bool _sessionComplete = false;
+  bool _sessionPointsAwarded = false;
 
   late AnimationController _animCtrl;
   late Animation<double> _flipAnim;
@@ -61,6 +65,8 @@ class _FlashcardsScreenState extends State<FlashcardsScreen>
       setState((){
         _studySet = results[0] as StudySet?;
         _cards    = results[1] as List<Flashcard>;
+        _sessionComplete = false;
+        _sessionPointsAwarded = false;
         _isLoading = false;
       });
     }
@@ -79,7 +85,11 @@ class _FlashcardsScreenState extends State<FlashcardsScreen>
     if (_currentIndex < _cards.length - 1){
       _animCtrl.reset();
       setState((){ _currentIndex++; _isFlipped = false; });
+      return;
     }
+
+    setState(() => _sessionComplete = true);
+    _awardCompletionPoints();
   }
 
   void _prevCard(){
@@ -87,6 +97,30 @@ class _FlashcardsScreenState extends State<FlashcardsScreen>
       _animCtrl.reset();
       setState((){ _currentIndex--; _isFlipped = false; });
     }
+  }
+
+  Future<void> _awardCompletionPoints() async {
+    if (_sessionPointsAwarded) return;
+    _sessionPointsAwarded = true;
+
+    final rewards = RewardsScope.of(context);
+    await rewards.award(RewardEventType.flashcardSession);
+    if (_cards.length >= 5) {
+      await rewards.award(RewardEventType.cardsStudied);
+    }
+
+    if (!mounted) return;
+    setState(() {});
+  }
+
+  void _restartSession() {
+    _animCtrl.reset();
+    setState(() {
+      _currentIndex = 0;
+      _isFlipped = false;
+      _sessionComplete = false;
+      _sessionPointsAwarded = false;
+    });
   }
 
   @override
@@ -122,7 +156,76 @@ class _FlashcardsScreenState extends State<FlashcardsScreen>
           ? const Center(
           child: Text('No cards in this set.',
               style: TextStyle(color: AppColors.textSub)))
+          : _sessionComplete
+          ? _buildSessionComplete()
           : _buildStudyView(),
+    );
+  }
+
+  Widget _buildSessionComplete() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Session Complete',
+              style: TextStyle(
+                color: AppColors.textSub,
+                fontSize: 12,
+                letterSpacing: 1.2,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              _studySet?.title ?? 'Flashcards',
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 26,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              '+20 points earned!',
+              style: TextStyle(
+                color: AppColors.success,
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 20),
+            GestureDetector(
+              onTap: _restartSession,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                decoration: BoxDecoration(
+                  color: AppColors.primarySoft,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: const Color(0x334F6FFF)),
+                ),
+                child: const Text(
+                  'Restart Set',
+                  style: TextStyle(
+                    color: AppColors.textLink,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextButton(
+              onPressed: () => widget.setId != null
+                  ? context.go('/sets/${widget.setId}')
+                  : context.go('/dashboard'),
+              child: const Text('Back to Set'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -293,40 +396,6 @@ class _FlashcardsScreenState extends State<FlashcardsScreen>
             ],
           ),
 
-          //restart when finished
-          if (_currentIndex == _cards.length - 1) ...[
-            const SizedBox(height: 20),
-            GestureDetector(
-              onTap: (){
-                _animCtrl.reset();
-                setState((){ _currentIndex = 0; _isFlipped = false; });
-              },
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 20, vertical: 10),
-                decoration: BoxDecoration(
-                  color: AppColors.primarySoft,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: const Color(0x334F6FFF)),
-                ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.replay_rounded,
-                        size: 16, color: AppColors.textLink),
-                    SizedBox(width: 6),
-                    Text(
-                      'Start Over',
-                      style: TextStyle(
-                          color: AppColors.textLink,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 13),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
         ],
       ),
     );

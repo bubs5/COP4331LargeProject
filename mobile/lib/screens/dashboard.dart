@@ -2,9 +2,11 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../app.dart';
+import '../models/rewards.dart';
 import '../models/studyset.dart';
 import '../services/setsService.dart';
 import '../services/localstorage.dart';
+import '../services/rewardsProvider.dart';
 import '../widgets/setCard.dart';
 
 class DashboardScreen extends StatefulWidget{
@@ -21,6 +23,7 @@ class _DashboardScreenState extends State<DashboardScreen>{
   StudySet? _lastSet;
   bool _isLoading = true;
   String _errorMessage = '';
+  bool _dailyLoginAwardChecked = false;
 
   @override
   void initState(){
@@ -66,21 +69,58 @@ class _DashboardScreenState extends State<DashboardScreen>{
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_dailyLoginAwardChecked) return;
+    final rewards = RewardsScope.of(context);
+    if (rewards.loading) return;
+
+    _dailyLoginAwardChecked = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final today = isoDateOnly(DateTime.now());
+      if (rewards.rewards.lastActivityDate != today) {
+        await rewards.award(RewardEventType.dailyLogin);
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context){
     return Scaffold(
       backgroundColor: AppColors.bg,
       appBar: AppBar(
-        backgroundColor: AppColors.bg,
-        title: const Text(
+        title: Text(
           'StudyRewards',
-          style: TextStyle(
-            color: AppColors.textPrimary,
+          style: const TextStyle(
             fontWeight: FontWeight.w700,
             fontSize: 18,
           ),
         ),
         actions: [
-
+          Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: GestureDetector(
+              onTap: () => context.go('/rewards'),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(999),
+                  color: Theme.of(context).colorScheme.primary.withOpacity(0.14),
+                  border: Border.all(
+                    color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                  ),
+                ),
+                child: Text(
+                  '⭐ ${RewardsScope.of(context).rewards.totalPoints} pts',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.primary,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+            ),
+          ),
         ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
