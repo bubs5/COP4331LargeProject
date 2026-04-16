@@ -18,6 +18,7 @@ function Navbar() {
             <div className="nav-links">
                 <Link to="/dashboard">Dashboard</Link>
                 <Link to="/flashcards">Study Sets</Link>
+                <Link to="/sets">Create Set</Link>
 
                 {/*points pill → rewards page */}
                 <Link to="/rewards" className="nav-points-pill">
