@@ -1,8 +1,0 @@
-Login & Register pages – just placeholder text, no forms or auth logic
-Dashboard – just placeholder text, no data
-Quiz – just placeholder text, no quiz functionality
-Profile – completely empty file
-All service files (api.ts, authService.ts, quizService.ts, setsService.ts) – all empty, no API calls wired up yet
-Types (types/index.ts) – empty, no TypeScript interfaces defined
-App.css – still has the default Vite scaffold styles (hero, counter, etc.) rather than custom app styles
-App name – Home page still says "Welcome to ______" (placeholder)

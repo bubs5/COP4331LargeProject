@@ -1,7 +1,12 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useRewards } from "../context/RewardsContext";
 import '../css/flashcards.css';
-import { getCardsForSet, getStudySetById, getStudySets } from '../services/setsService';
+import {
+    getCardsForSet,
+    getStudySetById,
+    getStudySets,
+} from '../services/setsService';
 import type { Flashcard, StudySet } from '../types';
 
 function Flashcards() {
@@ -17,10 +22,11 @@ function Flashcards() {
     const [knownCards, setKnownCards] = useState<Set<string>>(new Set());
     const [apiLoading, setApiLoading] = useState(true);
     const [error, setError] = useState("");
+    const { award } = useRewards();
+    const [sessionPointsAwarded, setSessionPointsAwarded] = useState(false);
 
     const setId = chosenSetId;
 
-    // load all sets
     useEffect(() => {
         async function loadStudySets() {
             try {
@@ -34,7 +40,6 @@ function Flashcards() {
         loadStudySets();
     }, []);
 
-    // load cards when a set is chosen
     useEffect(() => {
         async function loadFlashcards() {
             if (!setId) {
@@ -71,6 +76,7 @@ function Flashcards() {
                 setShowDef(false);
                 setSessionComplete(false);
                 setKnownCards(new Set());
+                setSessionPointsAwarded(false);
                 localStorage.setItem('lastSet', JSON.stringify(fetchedSet));
             } catch (err) {
                 console.error(err);
@@ -83,7 +89,6 @@ function Flashcards() {
         loadFlashcards();
     }, [setId]);
 
-    // progress
     const progressPercent = useMemo(() => {
         if (cards.length === 0) return 0;
         return Math.round(((index + 1) / cards.length) * 100);
@@ -126,9 +131,20 @@ function Flashcards() {
         setShowDef(false);
         setKnownCards(new Set());
         setSessionComplete(false);
+        setSessionPointsAwarded(false);
     };
 
-    // keyboard shortcuts
+    // Award points when session completes
+    useEffect(() => {
+        if (sessionComplete && !sessionPointsAwarded && cards.length > 0) {
+            setSessionPointsAwarded(true);
+            award("flashcard_session");
+            if (knownCards.size > 0) {
+                award("cards_studied", knownCards.size);
+            }
+        }
+    }, [sessionComplete, sessionPointsAwarded, cards.length, knownCards.size, award]);
+
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (cards.length === 0 || sessionComplete) return;
@@ -147,7 +163,6 @@ function Flashcards() {
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [index, cards, showDef, sessionComplete]);
 
-    // set picker
     if (!setId) {
         return (
             <div className="flashcards-state">
@@ -159,10 +174,7 @@ function Flashcards() {
                     {studySets.length === 0 ? (
                         <div className="empty-picker">
                             <p>You do not have any study sets yet.</p>
-                            <button
-                                className="primary-btn"
-                                onClick={() => navigate('/sets')}
-                            >
+                            <button className="primary-btn" onClick={() => navigate('/sets')}>
                                 Go to Study Sets
                             </button>
                         </div>
@@ -221,9 +233,7 @@ function Flashcards() {
                     </button>
                     <button
                         className="secondary-btn"
-                        onClick={() =>
-                            navigate(`/sets/${selectedSet?.id || ''}`)
-                        }
+                        onClick={() => navigate(`/sets/${selectedSet?.id || ''}`)}
                     >
                         Back to Set Builder
                     </button>
@@ -250,9 +260,7 @@ function Flashcards() {
             <div className="flashcards-topbar">
                 <button
                     className="secondary-btn"
-                    onClick={() =>
-                        navigate(`/sets/${selectedSet?.id || ''}`)
-                    }
+                    onClick={() => navigate(`/sets/${selectedSet?.id || ''}`)}
                 >
                     Back to Sets
                 </button>
@@ -280,50 +288,31 @@ function Flashcards() {
 
             <div className="progress-row">
                 <div className="progress-meta">
-                    <span>
-                        Card {index + 1} of {cards.length}
-                    </span>
+                    <span>Card {index + 1} of {cards.length}</span>
                     <span>{progressPercent}% through set</span>
                 </div>
                 <div className="progress-track">
-                    <div
-                        className="progress-fill"
-                        style={{ width: `${progressPercent}%` }}
-                    />
+                    <div className="progress-fill" style={{ width: `${progressPercent}%` }} />
                 </div>
             </div>
 
             <div className="flashcard" onClick={toggleCard}>
-                <span className="card-face-label">
-                    {showDef ? 'Definition' : 'Term'}
-                </span>
+                <span className="card-face-label">{showDef ? 'Definition' : 'Term'}</span>
                 <h2>{showDef ? currentCard.definition : currentCard.term}</h2>
                 <p>Click the card or press space to flip.</p>
             </div>
 
             <div className="button-group">
-                <button
-                    className="secondary-btn"
-                    onClick={prevCard}
-                    disabled={index === 0}
-                >
+                <button className="secondary-btn" onClick={prevCard} disabled={index === 0}>
                     Previous
                 </button>
-                <button className="primary-btn" onClick={toggleCard}>
-                    Flip
-                </button>
-                <button className="secondary-btn" onClick={nextCard}>
-                    Next
-                </button>
+                <button className="primary-btn" onClick={toggleCard}>Flip</button>
+                <button className="secondary-btn" onClick={nextCard}>Next</button>
             </div>
 
             <div className="knowldge-buttons">
-                <button className="success-btn" onClick={markKnown}>
-                    I know this
-                </button>
-                <button className="warning-btn" onClick={markUnknown}>
-                    Still learning
-                </button>
+                <button className="success-btn" onClick={markKnown}>I know this</button>
+                <button className="warning-btn" onClick={markUnknown}>Still learning</button>
             </div>
         </div>
     );

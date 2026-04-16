@@ -2,7 +2,6 @@ import type { Flashcard, StudySet } from '../types';
 
 const urlBase = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
-// Helper to get the stored user data (for userId and token)
 function getUserData(): { id: string; token: string } | null {
     const raw = localStorage.getItem('user_data');
     if (!raw) return null;
@@ -14,7 +13,6 @@ function getUserData(): { id: string; token: string } | null {
     }
 }
 
-// Helper to build auth headers
 function authHeaders(): Record<string, string> {
     const user = getUserData();
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
@@ -24,10 +22,9 @@ function authHeaders(): Record<string, string> {
     return headers;
 }
 
-// Maps a raw API set object (with _id) to the frontend StudySet shape
 function mapSet(raw: any): StudySet {
     return {
-        id: raw._id || raw.id,
+        id: (raw._id || raw.id || '').toString(),
         title: raw.title,
         description: raw.description,
         cardCount: raw.cardCount ?? 0,
@@ -36,13 +33,12 @@ function mapSet(raw: any): StudySet {
     };
 }
 
-// Maps a raw API card object (with _id) to the frontend Flashcard shape
 function mapCard(raw: any): Flashcard {
     return {
-        id: raw._id || raw.id,
+        id: (raw._id || raw.id || '').toString(),
         term: raw.term,
         definition: raw.definition,
-        setId: raw.setId,
+        setId: (raw.setId || '').toString(),
     };
 }
 

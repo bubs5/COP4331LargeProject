@@ -12,7 +12,6 @@ import {
 } from "../services/setsService";
 
 function SetDetail() {
-    // get setID from url
     const { setId } = useParams();
     const navigate = useNavigate();
 
@@ -24,7 +23,6 @@ function SetDetail() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
 
-    // data fetching
     async function loadSetData() {
         if (!setId) return;
 
@@ -55,7 +53,6 @@ function SetDetail() {
         loadSetData();
     }, [setId]);
 
-    // add or update a card
     async function handleSubmitCard(e: React.FormEvent) {
         e.preventDefault();
         if (!setId || !term.trim() || !definition.trim()) return;
@@ -77,14 +74,12 @@ function SetDetail() {
         }
     }
 
-    // handles edits
     function handleEdit(card: Flashcard) {
         setTerm(card.term);
         setDefinition(card.definition);
         setEditingCardId(card.id);
     }
 
-    // delete a card
     async function handleDeleteCard(cardId: string) {
         const confirmed = window.confirm("Delete this flashcard?");
         if (!confirmed) return;
@@ -98,7 +93,6 @@ function SetDetail() {
         }
     }
 
-    // deletes the entire set
     async function handleDeleteSet() {
         if (!studySet) return;
         const confirmed = window.confirm("Delete this entire study set?");
@@ -150,6 +144,12 @@ function SetDetail() {
                     >
                         Study This Set
                     </button>
+                    <button
+                        className="primary-btn"
+                        onClick={() => navigate(`/quiz?setId=${studySet.id}`)}
+                    >
+                        Take Quiz
+                    </button>
                     <button className="danger-btn" onClick={handleDeleteSet}>
                         Delete Set
                     </button>
@@ -159,9 +159,7 @@ function SetDetail() {
             {error && <div className="page-state error-state">{error}</div>}
 
             <section className="card-editor-section">
-                <h2>
-                    {editingCardId !== null ? "Edit Flashcard" : "Add Flashcard"}
-                </h2>
+                <h2>{editingCardId !== null ? "Edit Flashcard" : "Add Flashcard"}</h2>
 
                 <form onSubmit={handleSubmitCard} className="card-form">
                     <label>Term</label>

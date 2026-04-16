@@ -1,4 +1,3 @@
-//bottom has code for when api is ready
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "../css/authorize.css";
@@ -7,6 +6,8 @@ type RegisterResponse = {
     error?: string;
     message?: string;
 };
+
+const urlBase = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 function Register() {
     const navigate = useNavigate();
@@ -55,11 +56,9 @@ function Register() {
         try {
             setIsLoading(true);
 
-            const response = await fetch("http://localhost:5000/api/register", {
+            const response = await fetch(`${urlBase}/register`, {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(obj),
             });
 
@@ -78,7 +77,7 @@ function Register() {
             }
 
             setMessage(
-                res.message || "Account created successfully. Please log in."
+                res.message || "Account created successfully. Please check your email to verify your account."
             );
 
             setFirstName("");
@@ -91,7 +90,7 @@ function Register() {
 
             setTimeout(() => {
                 navigate("/login");
-            }, 1500);
+            }, 2500);
         } catch (error) {
             console.error("Register error:", error);
             setMessage("Unable to connect to server.");
@@ -187,7 +186,7 @@ function Register() {
                         </label>
 
                         <button type="submit" className="btn primaryBtn" disabled={isLoading}>
-                            {isLoading ? "Creating Account..." : "Create Account"}
+                            {isLoading ? "Creating Account" : "Create Account"}
                         </button>
 
                         <p className="helperText">
@@ -206,4 +205,3 @@ function Register() {
 }
 
 export default Register;
-

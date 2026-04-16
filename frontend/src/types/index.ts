@@ -1,16 +1,16 @@
 // structure for ts files
 
 export interface StudySet {
-    id: string;       // mapped from MongoDB _id
+    id: string;
     title: string;
     description: string;
-    cardCount: number; // computed by the API
+    cardCount: number;
     createdAt?: string;
     updatedAt?: string;
 }
 
 export interface Flashcard {
-    id: string;        // mapped from MongoDB _id (was number, now string)
+    id: string;
     term: string;
     definition: string;
     setId: string;

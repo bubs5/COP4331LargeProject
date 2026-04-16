@@ -3,14 +3,16 @@ import { Link, useNavigate } from "react-router-dom";
 import "../css/authorize.css";
 
 type LoginResponse = {
-    _id?: string;
     id?: string;
+    _id?: string;
     firstName: string;
     lastName: string;
     login: string;
     token?: string;
     error?: string;
 };
+
+const urlBase = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 function Login() {
     const [message, setMessage] = useState("");
@@ -19,8 +21,6 @@ function Login() {
     const [isLoading, setIsLoading] = useState(false);
 
     const navigate = useNavigate();
-
-    const urlBase = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
     async function doLogin(e: React.FormEvent<HTMLFormElement>): Promise<void> {
         e.preventDefault();
@@ -53,8 +53,7 @@ function Login() {
 
             const res: LoginResponse = await response.json();
 
-            // Check for a valid user — MongoDB returns _id as a string
-            const userId = res._id || res.id;
+            const userId = res.id || res._id;
             if (!userId || res.error) {
                 setMessage(res.error || "User/Password combination incorrect");
                 setIsLoading(false);
