@@ -127,7 +127,7 @@ function SetDetail() {
     return (
         <div className="set-detail-page">
             <div className="set-detail-header">
-                <button className="secondary-btn" onClick={() => navigate("/sets")}>
+                <button className="secondary-btn" onClick={() => navigate("/flashcards")}>
                     Back to Sets
                 </button>
 
