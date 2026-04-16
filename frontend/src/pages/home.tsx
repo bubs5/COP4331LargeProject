@@ -3,7 +3,7 @@ import "../css/authorize.css";
 
 function Home() {
     return (
-        <div className="home-container">
+        <main className="home-container">
             <div className="home-content">
                 <h1 className="home-title">StudyRewards</h1>
 
@@ -12,16 +12,16 @@ function Home() {
                 </p>
 
                 <div className="home-buttons">
-                    <Link to="/login">
-                        <button className="home-btn">Login</button>
+                    <Link to="/login" className="home-btn">
+                        Login
                     </Link>
 
-                    <Link to="/register">
-                        <button className="home-btn secondary">Register</button>
+                    <Link to="/register" className="home-btn secondary">
+                        Register
                     </Link>
                 </div>
             </div>
-        </div>
+        </main>
     );
 }
 
