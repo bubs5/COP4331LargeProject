@@ -163,12 +163,21 @@ function Flashcards() {
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [index, cards, showDef, sessionComplete]);
 
-    if (!setId) {
-        return (
-            <div className="flashcards-state">
-                <p className="eyebrow">Flashcards</p>
-                <h1>Choose a set to study</h1>
-                <p>Select one of your study sets to begin.</p>
+ if (!setId) {
+    return (
+        <div className="flashcards-state">
+
+            <div className="flashcards-actions">
+                <button
+                    className="primary-btn"
+                    onClick={() => navigate('/sets')}
+                >
+                    New Set
+                </button>
+            </div>
+
+            <h1>Choose a set to study</h1>
+            <p>Select one of your study sets to begin.</p>
 
                 <div className="set-picker-list">
                     {studySets.length === 0 ? (
